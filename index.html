@@ -1822,20 +1822,17 @@ function renderGroups() {
     }
     const active  = interleaveByGroup(T.matches.filter(m => m.phase === 'group' && m.status === 'active'));
     const pending = interleaveByGroup(T.matches.filter(m => m.phase === 'group' && m.status === 'pending'));
-    const done    = interleaveByGroup(T.matches.filter(m => m.phase === 'group' && m.status === 'done'));
     const openMatches = [...active, ...pending];
     const firstPendingIdx = openMatches.findIndex(x => x.status === 'pending');
-    const renderItem = (m, idx, baseIdx = 0) => {
+    const renderItem = (m, idx) => {
       const canStart = isAdmin && m.status === 'pending' && activeCount < T.cfg.boards;
-      const isNext = m.status === 'pending' && (baseIdx + idx) === firstPendingIdx;
+      const isNext = m.status === 'pending' && idx === firstPendingIdx;
       const groupName = T.groups.find(g => g.id === m.groupId)?.name || '';
       const groupLabel = T.groups.length > 1 ? `<div class="match-group-label">${esc(groupName)}</div>` : '';
       return groupLabel + renderMatchCard(m, canStart, isNext);
     };
     const openHtml = openMatches.map((m, idx) => renderItem(m, idx)).join('');
-    const doneHtml = done.map((m, idx) => renderItem(m, idx)).join('');
-    const resultsDivider = done.length > 0 ? `<div style="display:flex;align-items:center;gap:10px;padding:4px 0 2px"><span style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;white-space:nowrap">Resultate</span><div style="flex:1;height:1px;background:var(--glass-border)"></div></div>` : '';
-    content = `<div class="card"><div class="matches-grid">${openHtml}${resultsDivider}${doneHtml}</div></div>`;
+    content = `<div class="card"><div class="matches-grid">${openHtml}</div></div>`;
   }
 
   return `
@@ -1890,52 +1887,62 @@ function renderMatchCard(m, canStart, isNext) {
   const proposal = proposalEntry ? proposalEntry[1] : null;
   const proposalId = proposalEntry ? proposalEntry[0] : null;
 
-  return `
-    ${isNext && m.status === 'pending' ? `<div class="next-up-label">NEXT UP</div>` : ''}
-    <div class="${cls}" ${proposal && m.status !== 'done' ? 'style="border-radius:10px 10px 0 0"' : ''} ${onclick ? `onclick="${onclick}"` : ''}>
-      ${m.status !== 'done' ? `<div style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;padding:0 12px 0 2px;border-right:1px solid ${m.status==='active'?'rgba(235,101,255,0.25)':'var(--glass-border)'};margin-right:6px;min-width:48px">
-        ${m.status==='active'?`<span style="width:6px;height:6px;border-radius:50%;background:var(--secondary);box-shadow:0 0 8px var(--secondary);animation:pulse-dot 1.2s infinite;margin-bottom:2px"></span>`:''}
-        <span style="font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;color:${m.status==='active'?'var(--secondary)':'var(--text3)'};text-transform:uppercase">BOARD</span>
-        <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1;color:${m.status==='active'?'var(--secondary)':'var(--primary)'}">${m.boardNumber}</span>
-      </div>` : ''}
-      <div class="match-player" style="flex:1">
-        <span class="match-player-name ${w1 ? 'text-green font-bold' : ''}">${esc(p1Name)}</span>
-        ${w1 ? '<div class="match-winner-dot"></div>' : ''}
-      </div>
-      <div class="match-score">
-        <span class="match-score-num ${w1 ? 'text-green' : ''}" style="${m.status==='done'?'font-size:20px;font-family:Bebas Neue,sans-serif':''}">${m.legs1}</span>
-        <span class="match-score-sep">:</span>
-        <span class="match-score-num ${w2 ? 'text-green' : ''}" style="${m.status==='done'?'font-size:20px;font-family:Bebas Neue,sans-serif':''}">${m.legs2}</span>
-      </div>
-      <div class="match-player" style="flex:1;flex-direction:row-reverse;text-align:right">
-        ${w2 ? '<div class="match-winner-dot"></div>' : ''}
-        <span class="match-player-name ${w2 ? 'text-green font-bold' : ''}">${esc(p2Name)}</span>
-      </div>
-      ${m.status === 'active' ? `<span class="match-status-badge badge-active"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:var(--secondary);box-shadow:0 0 6px var(--secondary);animation:pulse-dot 1.2s infinite"></span>Live</span></span>` : m.status === 'done' ? `<span class="match-status-badge badge-done">Fertig</span>` : ''}
-      ${m.status === 'done' && isAdmin ? `<button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button>` : ''}
-    </div>
-    ${proposal && m.status !== 'done' ? isAdmin
-      ? `<div data-proposal-row style="margin-top:-1px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.22);border-top:none;border-radius:0 0 10px 10px;padding:10px 14px;display:flex;align-items:center;gap:12px">
+  const boardCol = m.status !== 'done' ? `<div style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;padding:0 12px 0 2px;border-right:1px solid ${m.status==='active'?'rgba(235,101,255,0.25)':'var(--glass-border)'};margin-right:6px;min-width:48px;flex-shrink:0">
+    ${m.status==='active'?`<span style="width:6px;height:6px;border-radius:50%;background:var(--secondary);box-shadow:0 0 8px var(--secondary);animation:pulse-dot 1.2s infinite;margin-bottom:2px"></span>`:''}
+    <span style="font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;color:${m.status==='active'?'var(--secondary)':'var(--text3)'};text-transform:uppercase">BOARD</span>
+    <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1;color:${m.status==='active'?'var(--secondary)':'var(--primary)'}">${m.boardNumber}</span>
+  </div>` : '';
+
+  const hasBottomRow = (proposal && m.status !== 'done') || (!isAdmin && m.status !== 'done' && m.p1 && m.p2);
+
+  const bottomRow = proposal && m.status !== 'done'
+    ? isAdmin
+      ? `<div data-proposal-row style="border-top:1px solid rgba(255,193,7,0.18);background:rgba(255,193,7,0.06);display:flex;align-items:center;gap:12px;padding:10px 14px">
           <div style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;padding:0 12px 0 2px;border-right:1px solid rgba(255,193,7,0.2);margin-right:6px;min-width:48px;flex-shrink:0">
             <span style="font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;color:rgba(255,193,7,0.55);text-transform:uppercase">GEMELDET</span>
           </div>
-          <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center">
-            <div class="match-score">
-              <span class="match-score-num" style="color:#ffc107">${proposal.legs1}</span>
-              <span class="match-score-sep" style="color:rgba(255,193,7,0.4)">:</span>
-              <span class="match-score-num" style="color:#ffc107">${proposal.legs2}</span>
-            </div>
-            <div style="position:absolute;right:0;display:flex;gap:6px">
-              <button onclick="event.stopPropagation();approveProposalAnimated('${proposalId}',this)" style="padding:5px 14px;background:rgba(129,236,255,0.15);border:1px solid rgba(129,236,255,0.35);border-radius:6px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✓</button>
-              <button onclick="event.stopPropagation();rejectProposal('${proposalId}')" style="padding:5px 14px;background:rgba(255,110,132,0.12);border:1px solid rgba(255,110,132,0.3);border-radius:6px;color:var(--red);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✕</button>
-            </div>
+          <div class="match-player" style="flex:1"><span class="match-player-name" style="visibility:hidden">${esc(p1Name)}</span></div>
+          <div class="match-score">
+            <span class="match-score-num" style="color:#ffc107">${proposal.legs1}</span>
+            <span class="match-score-sep" style="color:rgba(255,193,7,0.4)">:</span>
+            <span class="match-score-num" style="color:#ffc107">${proposal.legs2}</span>
+          </div>
+          <div class="match-player" style="flex:1;flex-direction:row-reverse;justify-content:flex-start;gap:6px">
+            <button onclick="event.stopPropagation();rejectProposal('${proposalId}')" style="padding:5px 12px;background:rgba(255,110,132,0.12);border:1px solid rgba(255,110,132,0.3);border-radius:6px;color:var(--red);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✕</button>
+            <button onclick="event.stopPropagation();approveProposalAnimated('${proposalId}',this)" style="padding:5px 12px;background:rgba(129,236,255,0.15);border:1px solid rgba(129,236,255,0.35);border-radius:6px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✓</button>
           </div>
         </div>`
-      : `<div style="margin-top:-1px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.2);border-top:none;border-radius:0 0 10px 10px;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      : `<div style="border-top:1px solid rgba(255,193,7,0.18);background:rgba(255,193,7,0.06);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px">
           <span style="font-size:12px;color:#ffc107;font-family:'Space Grotesk',sans-serif;font-weight:600">⏳ Gemeldet: ${proposal.legs1} : ${proposal.legs2}</span>
           <span style="font-size:11px;color:var(--text3);font-family:'DM Sans',sans-serif;flex-shrink:0">Warte auf Admin</span>
         </div>`
-    : !isAdmin && m.status !== 'done' && m.p1 && m.p2 ? `<div style="padding:4px 8px 8px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:7px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Ergebnis melden</button></div>` : ''}
+    : !isAdmin && m.status !== 'done' && m.p1 && m.p2
+      ? `<div style="border-top:1px solid var(--glass-border);padding:8px 12px"><button onclick="event.stopPropagation();openProposalModal('${m.id}')" style="width:100%;padding:7px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Ergebnis melden</button></div>`
+      : '';
+
+  return `
+    ${isNext && m.status === 'pending' ? `<div class="next-up-label">NEXT UP</div>` : ''}
+    <div class="${cls}" style="flex-direction:column;padding:0;gap:0" ${onclick ? `onclick="${onclick}"` : ''}>
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px">
+        ${boardCol}
+        <div class="match-player" style="flex:1">
+          <span class="match-player-name ${w1 ? 'text-green font-bold' : ''}">${esc(p1Name)}</span>
+          ${w1 ? '<div class="match-winner-dot"></div>' : ''}
+        </div>
+        <div class="match-score">
+          <span class="match-score-num ${w1 ? 'text-green' : ''}" style="${m.status==='done'?'font-size:20px;font-family:Bebas Neue,sans-serif':''}">${m.legs1}</span>
+          <span class="match-score-sep">:</span>
+          <span class="match-score-num ${w2 ? 'text-green' : ''}" style="${m.status==='done'?'font-size:20px;font-family:Bebas Neue,sans-serif':''}">${m.legs2}</span>
+        </div>
+        <div class="match-player" style="flex:1;flex-direction:row-reverse;text-align:right">
+          ${w2 ? '<div class="match-winner-dot"></div>' : ''}
+          <span class="match-player-name ${w2 ? 'text-green font-bold' : ''}">${esc(p2Name)}</span>
+        </div>
+        ${m.status === 'active' ? `<span class="match-status-badge badge-active"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:var(--secondary);box-shadow:0 0 6px var(--secondary);animation:pulse-dot 1.2s infinite"></span>Live</span></span>` : m.status === 'done' ? `<span class="match-status-badge badge-done">Fertig</span>` : ''}
+        ${m.status === 'done' && isAdmin ? `<button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button>` : ''}
+      </div>
+      ${bottomRow}
+    </div>
   `;
 }
 
