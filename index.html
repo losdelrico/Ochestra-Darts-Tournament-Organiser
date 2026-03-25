@@ -28,6 +28,9 @@
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getDatabase, ref, onValue, set, get, push, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
     window._firebaseModules = { initializeApp, getDatabase, ref, onValue, set, get, push, remove };
+    // Module scripts run after regular scripts — call initFirebase here once modules are ready
+    if (typeof initFirebase === 'function') initFirebase();
+    else window._firebaseReady = true;
   </script>
 
   <style>
@@ -2589,8 +2592,9 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
   appPhase = 'tournament';
 }
 
-// initFirebase handles loading from localStorage or Firebase and calls render()
-initFirebase();
+// initFirebase is called from the module script once Firebase modules are loaded
+// Fallback: if module already ran before this script, call it now
+if (window._firebaseReady) initFirebase();
 </script>
 </body>
 </html>
