@@ -1555,7 +1555,7 @@ function renderSetup() {
     <div class="player-item" data-pid="${p.id}">
       ${playerAvatar(p.id, 32)}
       <input class="player-name-input" type="text" value="${esc(p.name)}" data-pid="${p.id}" oninput="liveRenamePlayer('${p.id}', this)" placeholder="Name...">
-      ${players.length > 2 ? `<button class="btn btn-ghost btn-icon btn-sm" onclick="removePlayer('${p.id}')">✕</button>` : ''}
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="removePlayer('${p.id}')">✕</button>
     </div>
   `).join('');
 
