@@ -2602,7 +2602,14 @@ function openProposalModal(matchId) {
   const needed = neededLegs(m);
   document.getElementById('proposal-needed-info').textContent = `Best of ${matchLegs(m)} — wer zuerst ${needed} Leg${needed>1?'s':''} gewinnt`;
   document.getElementById('proposal-match-title').textContent = m.isFinal ? 'Finale' : m.is3rd ? 'Platz 3' : m.phase === 'group' ? 'Gruppenspiel' : 'K.O.-Match';
-  document.getElementById('proposal-submit-btn').disabled = true;
+  const alreadyPending = Object.values(pendingProposals).some(p => p.matchId === matchId);
+  const submitBtn = document.getElementById('proposal-submit-btn');
+  submitBtn.disabled = alreadyPending || true;
+  document.getElementById('proposal-needed-info').textContent = alreadyPending
+    ? '⏳ Ergebnis bereits gemeldet — warte auf Admin-Bestätigung.'
+    : `Best of ${matchLegs(m)} — wer zuerst ${needed} Leg${needed>1?'s':''} gewinnt`;
+  if (alreadyPending) { submitBtn.disabled = true; submitBtn.textContent = 'BEREITS GEMELDET'; }
+  else { submitBtn.disabled = true; submitBtn.textContent = 'MELDEN'; }
   document.getElementById('proposal-modal-backdrop').classList.add('open');
 }
 function closeProposalModal() {
