@@ -77,6 +77,7 @@
     ::-webkit-scrollbar-thumb { background: rgba(148,170,255,0.2); border-radius: 10px; }
     @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
     @keyframes qr-scan { 0%,100%{top:15%} 50%{top:calc(85% - 2px)} }
+    @keyframes proposal-approve { 0%{background:rgba(255,193,7,0.06);border-color:rgba(255,193,7,0.22)} 40%{background:rgba(129,236,255,0.18);border-color:rgba(129,236,255,0.5)} 100%{background:rgba(129,236,255,0.04);opacity:0;transform:scaleY(0.7);transform-origin:top} }
 
     #app {
       max-width: 900px;
@@ -1887,17 +1888,20 @@ function renderMatchCard(m, canStart, isNext) {
       ${m.status === 'done' && isAdmin ? `<button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button>` : ''}
     </div>
     ${proposal && m.status !== 'done' ? isAdmin
-      ? `<div style="margin-top:-1px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.22);border-top:none;border-radius:0 0 10px 10px;padding:10px 14px;display:flex;align-items:center;gap:10px">
-          <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:rgba(255,193,7,0.7);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p1Name)}</span>
-          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-            <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1;color:#ffc107">${proposal.legs1}</span>
-            <span style="color:rgba(255,193,7,0.4);font-size:14px">:</span>
-            <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1;color:#ffc107">${proposal.legs2}</span>
+      ? `<div data-proposal-row style="margin-top:-1px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.22);border-top:none;border-radius:0 0 10px 10px;padding:10px 14px;display:flex;align-items:center;gap:12px">
+          <div style="display:flex;align-items:center;justify-content:center;min-width:48px;flex-shrink:0;padding:0 12px 0 2px;border-right:1px solid rgba(255,193,7,0.2);margin-right:6px">
+            <span style="font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;color:rgba(255,193,7,0.55);text-transform:uppercase">GEMELDET</span>
           </div>
-          <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:rgba(255,193,7,0.7);flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p2Name)}</span>
-          <div style="display:flex;gap:6px;flex-shrink:0;margin-left:4px">
-            <button onclick="event.stopPropagation();approveProposal('${proposalId}')" style="padding:5px 12px;background:rgba(129,236,255,0.15);border:1px solid rgba(129,236,255,0.35);border-radius:6px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✓</button>
-            <button onclick="event.stopPropagation();rejectProposal('${proposalId}')" style="padding:5px 12px;background:rgba(255,110,132,0.12);border:1px solid rgba(255,110,132,0.3);border-radius:6px;color:var(--red);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✕</button>
+          <div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1;color:#ffc107">${proposal.legs1}</span>
+            <span style="color:rgba(255,193,7,0.4);font-size:13px">:</span>
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1;color:#ffc107">${proposal.legs2}</span>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="event.stopPropagation();approveProposalAnimated('${proposalId}',this)" style="padding:5px 14px;background:rgba(129,236,255,0.15);border:1px solid rgba(129,236,255,0.35);border-radius:6px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✓</button>
+            <button onclick="event.stopPropagation();rejectProposal('${proposalId}')" style="padding:5px 14px;background:rgba(255,110,132,0.12);border:1px solid rgba(255,110,132,0.3);border-radius:6px;color:var(--red);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✕</button>
           </div>
         </div>`
       : `<div style="margin-top:-1px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.2);border-top:none;border-radius:0 0 10px 10px;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -2657,6 +2661,16 @@ function adjustProposalScore(player, dir) {
 }
 function submitProposalFromModal() {
   submitProposal(proposalMatchId, proposalLegs1, proposalLegs2);
+}
+
+function approveProposalAnimated(proposalId, btn) {
+  const row = btn.closest('[data-proposal-row]');
+  if (row) {
+    row.style.animation = 'proposal-approve 0.45s ease forwards';
+    setTimeout(() => approveProposal(proposalId), 380);
+  } else {
+    approveProposal(proposalId);
+  }
 }
 
 // ===================== SCROLL TO FIRST PROPOSAL =====================
