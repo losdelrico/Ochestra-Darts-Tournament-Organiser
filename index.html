@@ -1475,9 +1475,10 @@ function renderHeader() {
     else if (i < curr) cls += ' done';
     else cls += ' locked';
     const clickable = i <= curr || (i === curr + 1 && canAdvance());
+    const label = (p.key === 'setup' && T.phase !== 'setup') ? 'Neu' : p.label;
     tabs += `<button class="${cls}" data-phase="${p.key}" ${clickable ? '' : 'disabled'}>
       <span class="nav-icon">${p.icon}</span>
-      <span>${p.label}</span>
+      <span>${label}</span>
     </button>`;
   });
 
@@ -2412,6 +2413,11 @@ function bindPhaseNavEvents() {
       const order = ['setup', 'groups', 'knockout', 'results'];
       const curr = order.indexOf(T.phase);
       const target = order.indexOf(phase);
+      // Setup tab always starts a new tournament when not already in setup
+      if (phase === 'setup' && T.phase !== 'setup') {
+        newTournament();
+        return;
+      }
       if (target <= curr) {
         T.phase = phase;
         save();
