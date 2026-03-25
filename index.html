@@ -843,6 +843,11 @@ function updateProposalBadge() {
     playBell();
     showToast('🔔 Neues Ergebnis gemeldet!');
   }
+  // Auto-close proposals panel when empty
+  if (count === 0) {
+    const panel = document.getElementById('proposals-panel-backdrop');
+    if (panel) panel.classList.remove('open');
+  }
   _lastProposalCount = count;
   _proposalsInitialized = true;
   // Refresh proposals panel list if open
