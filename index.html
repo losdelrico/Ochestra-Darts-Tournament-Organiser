@@ -1271,6 +1271,18 @@ function render() {
 
   const blobs = document.querySelectorAll('.ambient-blob');
   if (appPhase === 'landing') {
+    if (!isAdmin) {
+      blobs.forEach(b => b.style.opacity = '0');
+      app.innerHTML = `
+        <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:0.12em;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:8px">OCHESTRA</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:40px">Darts Tournament Organiser</div>
+          <div style="font-size:48px;margin-bottom:20px">🎯</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">Kein aktives Turnier</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text3);max-width:280px;line-height:1.6">Bitte den QR-Code des aktiven Turniers scannen.</div>
+        </div>`;
+      return;
+    }
     blobs.forEach(b => b.style.opacity = '0');
     app.innerHTML = renderLanding();
     return;
