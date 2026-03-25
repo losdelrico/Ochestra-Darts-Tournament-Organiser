@@ -759,6 +759,7 @@ function initFromLocalStorage() {
   // Firebase is primary — always start fresh on landing (no ?t= param)
   T = DEFAULT_STATE();
   T.adminPin = '1234';
+  saveToFirebase(); // ensure new tournament ID exists in Firebase immediately
 }
 
 function listenToTournament(tid) {
@@ -2487,6 +2488,7 @@ function launchConfetti() {
 // ===================== QR CODE MODAL =====================
 function openQrModal() {
   if (!T) return;
+  saveToFirebase(); // ensure latest state is in Firebase before sharing
   const url = getTournamentUrl(T.id);
   document.getElementById('qr-tournament-name').textContent = T.cfg.name || 'Turnier';
   document.getElementById('qr-url-text').textContent = url;
