@@ -26,8 +26,8 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getDatabase, ref, onValue, set, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-    window._firebaseModules = { initializeApp, getDatabase, ref, onValue, set, get };
+    import { getDatabase, ref, onValue, set, get, push, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    window._firebaseModules = { initializeApp, getDatabase, ref, onValue, set, get, push, remove };
   </script>
 
   <style>
@@ -584,6 +584,62 @@
   </div>
 </div>
 
+<!-- PROPOSALS PANEL MODAL -->
+<div id="proposals-panel-backdrop" class="confirm-backdrop" onclick="if(event.target===this)this.classList.remove('open')">
+  <div style="background:#0d1526;border:1px solid rgba(148,170,255,0.15);border-radius:20px;padding:24px 20px;max-width:440px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#fff;margin:0">Gemeldete Ergebnisse</h3>
+      <button onclick="document.getElementById('proposals-panel-backdrop').classList.remove('open')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;padding:6px 10px;cursor:pointer;font-size:14px">&#10005;</button>
+    </div>
+    <div id="proposals-panel-list"></div>
+  </div>
+</div>
+
+<!-- QR CODE MODAL -->
+<div id="qr-modal-backdrop" class="confirm-backdrop">
+  <div style="background:#0d1526;border:1px solid rgba(148,170,255,0.15);border-radius:20px;padding:32px 28px;max-width:320px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.6)">
+    <div style="font-size:40px;margin-bottom:12px">&#128241;</div>
+    <h3 style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff;margin:0 0 6px">QR Code</h3>
+    <p id="qr-tournament-name" style="font-size:13px;color:rgba(255,255,255,0.45);margin:0 0 20px;font-family:'DM Sans',sans-serif"></p>
+    <div id="qr-code-img" style="display:flex;justify-content:center;margin-bottom:16px"></div>
+    <p style="font-size:11px;color:rgba(255,255,255,0.3);font-family:'DM Sans',sans-serif;margin:0 0 20px;word-break:break-all" id="qr-url-text"></p>
+    <button onclick="closeQrModal()" style="width:100%;padding:14px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;cursor:pointer">Schliessen</button>
+  </div>
+</div>
+
+<!-- PROPOSAL MODAL (viewer submits score) -->
+<div id="proposal-modal-backdrop" class="confirm-backdrop">
+  <div style="background:#0d1526;border:1px solid rgba(148,170,255,0.15);border-radius:20px;padding:32px 28px;max-width:340px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.6)">
+    <div style="font-size:40px;margin-bottom:12px">&#128226;</div>
+    <h3 style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff;margin:0 0 6px">Ergebnis melden</h3>
+    <p id="proposal-match-title" style="font-size:13px;color:rgba(255,255,255,0.45);margin:0 0 20px;font-family:'DM Sans',sans-serif"></p>
+    <div style="display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:20px">
+      <div style="flex:1;text-align:center">
+        <div id="proposal-p1-name" style="font-size:13px;color:rgba(255,255,255,0.6);font-family:'DM Sans',sans-serif;margin-bottom:8px"></div>
+        <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+          <button onclick="adjustProposalScore('p1','dec')" style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:18px;cursor:pointer">&#8722;</button>
+          <div id="proposal-score1" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#fff;min-width:32px">0</div>
+          <button onclick="adjustProposalScore('p1','inc')" style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:18px;cursor:pointer">+</button>
+        </div>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:rgba(255,255,255,0.3)">:</div>
+      <div style="flex:1;text-align:center">
+        <div id="proposal-p2-name" style="font-size:13px;color:rgba(255,255,255,0.6);font-family:'DM Sans',sans-serif;margin-bottom:8px"></div>
+        <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+          <button onclick="adjustProposalScore('p2','dec')" style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:18px;cursor:pointer">&#8722;</button>
+          <div id="proposal-score2" style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#fff;min-width:32px">0</div>
+          <button onclick="adjustProposalScore('p2','inc')" style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:18px;cursor:pointer">+</button>
+        </div>
+      </div>
+    </div>
+    <p id="proposal-needed-info" style="font-size:12px;color:rgba(255,255,255,0.3);font-family:'DM Sans',sans-serif;margin:0 0 20px"></p>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeProposalModal()" style="flex:1;padding:14px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;cursor:pointer">Abbrechen</button>
+      <button id="proposal-submit-btn" onclick="submitProposalFromModal()" style="flex:1;padding:14px;background:linear-gradient(135deg,#c855f7,#8b3cf7);border:none;border-radius:12px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:18px;cursor:pointer;box-shadow:0 4px 20px rgba(180,80,255,0.35)" disabled>MELDEN</button>
+    </div>
+  </div>
+</div>
+
 <canvas class="confetti-canvas" id="confetti-canvas"></canvas>
 
 <script>
@@ -594,16 +650,15 @@
 // 3. Fill in your config below
 // 4. Set database rules to allow read: true, write: true (for simplicity)
 const FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  databaseURL: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyBosifVS55CUOjjb99T7Rj4MDn8P2Lt4Vo",
+  authDomain: "ochestra-dart.firebaseapp.com",
+  databaseURL: "https://ochestra-dart-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ochestra-dart",
+  storageBucket: "ochestra-dart.firebasestorage.app",
+  messagingSenderId: "564247884513",
+  appId: "1:564247884513:web:121a17b0504df919653da0"
 };
-const FIREBASE_ENABLED = FIREBASE_CONFIG.databaseURL !== "";
-const TOURNAMENT_ID = "dart-turnier-1"; // change this per tournament
+const FIREBASE_ENABLED = true;
 
 // ===================== ADMIN STATE =====================
 let isAdmin = false;
@@ -645,29 +700,202 @@ function uid() { return Math.random().toString(36).slice(2, 9); }
 function save() {
   try { localStorage.setItem('dart-turnier', JSON.stringify(T)); } catch(e) {}
   if (T && T.phase !== 'setup') archiveTournament();
-  if (FIREBASE_ENABLED && window._db) {
-    const { ref, set } = window._firebaseModules;
-    set(ref(window._db, `tournaments/${TOURNAMENT_ID}`), T).catch(console.error);
-  }
+  saveToFirebase();
+}
+
+function saveToFirebase() {
+  if (!window._db || !T || !T.id) return;
+  const { ref, set } = window._firebaseModules;
+  set(ref(window._db, `tournaments/${T.id}/state`), T).catch(console.error);
 }
 
 // ===================== FIREBASE INIT =====================
+let _tournamentListener = null;
+let _proposalListener = null;
+let pendingProposals = {};
+
 function initFirebase() {
-  if (!FIREBASE_ENABLED) return;
   try {
-    const { initializeApp, getDatabase, ref, onValue } = window._firebaseModules;
-    const app = initializeApp(FIREBASE_CONFIG);
-    window._db = getDatabase(app);
-    onValue(ref(window._db, `tournaments/${TOURNAMENT_ID}`), (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        T = data;
-        if (!T.id) T.id = uid();
-        if (!T.adminPin) T.adminPin = '1234';
+    const { initializeApp, getDatabase, ref, onValue, get } = window._firebaseModules;
+    const fbApp = initializeApp(FIREBASE_CONFIG);
+    window._db = getDatabase(fbApp);
+
+    // Check URL for ?t=tournamentId (viewer joining via QR code)
+    const urlParams = new URLSearchParams(location.search);
+    const urlTid = urlParams.get('t');
+
+    if (urlTid) {
+      // Viewer mode: load tournament from Firebase by ID
+      get(ref(window._db, `tournaments/${urlTid}/state`)).then(snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          T = data;
+          if (!T.adminPin) T.adminPin = '1234';
+          appPhase = 'tournament';
+          isAdmin = false;
+          listenToTournament(urlTid);
+          render();
+        } else {
+          // Tournament not found, fallback to landing
+          initFromLocalStorage();
+          listenToTournament(T.id);
+          render();
+        }
+      }).catch(() => {
+        initFromLocalStorage();
         render();
-      }
-    });
-  } catch(e) { console.warn('Firebase init failed, using localStorage', e); }
+      });
+    } else {
+      initFromLocalStorage();
+      if (T && T.id) listenToTournament(T.id);
+      render();
+    }
+  } catch(e) {
+    console.warn('Firebase init failed', e);
+    initFromLocalStorage();
+    render();
+  }
+}
+
+function initFromLocalStorage() {
+  if (!load()) {
+    T = DEFAULT_STATE();
+    T.adminPin = '1234';
+    save();
+  }
+  if (!T.adminPin) T.adminPin = '1234';
+}
+
+function listenToTournament(tid) {
+  if (!window._db) return;
+  const { ref, onValue } = window._firebaseModules;
+
+  // State listener (for viewers — admin ignores remote state updates)
+  if (_tournamentListener) _tournamentListener();
+  _tournamentListener = onValue(ref(window._db, `tournaments/${tid}/state`), (snapshot) => {
+    if (isAdmin) return; // admin owns the state
+    const data = snapshot.val();
+    if (data) {
+      T = data;
+      if (!T.adminPin) T.adminPin = '1234';
+      render();
+    }
+  });
+
+  // Proposals listener (everyone listens, admin sees badge)
+  if (_proposalListener) _proposalListener();
+  _proposalListener = onValue(ref(window._db, `tournaments/${tid}/proposals`), (snapshot) => {
+    pendingProposals = snapshot.val() || {};
+    updateProposalBadge();
+  });
+}
+
+function getTournamentUrl(tid) {
+  const base = location.origin + location.pathname;
+  return `${base}?t=${tid || (T && T.id) || ''}`;
+}
+
+// ===================== PROPOSALS =====================
+function updateProposalBadge() {
+  const count = Object.keys(pendingProposals).length;
+  const badge = document.getElementById('proposal-badge');
+  if (badge) {
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'flex' : 'none';
+  }
+  // Refresh proposals panel list if open
+  const panelList = document.getElementById('proposals-panel-list');
+  if (panelList) {
+    if (!isAdmin || count === 0) {
+      panelList.innerHTML = '<div style="text-align:center;padding:24px;color:rgba(255,255,255,0.3);font-family:\'DM Sans\',sans-serif;font-size:14px">Keine offenen Meldungen.</div>';
+    } else {
+      const entries = Object.entries(pendingProposals);
+      panelList.innerHTML = entries.map(([pid, p]) => {
+        if (!T) return '';
+        const m = T.matches.find(x => x.id === p.matchId);
+        if (!m) return '';
+        const n1 = esc(playerName(m.p1));
+        const n2 = esc(playerName(m.p2));
+        const winner = p.legs1 > p.legs2 ? n1 : n2;
+        return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(148,170,255,0.08)">
+          <div style="flex:1;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text)">
+            <span style="font-weight:600">${n1}</span> <span style="color:var(--text3)">${p.legs1} : ${p.legs2}</span> <span style="font-weight:600">${n2}</span>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Vorgeschlagener Sieger: <span style="color:var(--tertiary)">${winner}</span></div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button onclick="approveProposal('${pid}')" style="padding:6px 12px;background:rgba(129,236,255,0.12);border:1px solid rgba(129,236,255,0.3);border-radius:8px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">&#10003; OK</button>
+            <button onclick="rejectProposal('${pid}')" style="padding:6px 10px;background:rgba(255,110,132,0.08);border:1px solid rgba(255,110,132,0.2);border-radius:8px;color:var(--red);font-size:13px;cursor:pointer">&#10005;</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
+function submitProposal(matchId, legs1, legs2) {
+  if (!window._db || !T) return;
+  const { ref, push, set } = window._firebaseModules;
+  const proposalRef = push(ref(window._db, `tournaments/${T.id}/proposals`));
+  set(proposalRef, { matchId, legs1, legs2, submittedAt: Date.now(), status: 'pending' })
+    .then(() => {
+      showToast('Ergebnis gemeldet! Warte auf Admin-Bestätigung.');
+      closeProposalModal();
+    })
+    .catch(() => showToast('Fehler beim Melden. Bitte erneut versuchen.'));
+}
+
+function approveProposal(proposalId) {
+  const proposal = pendingProposals[proposalId];
+  if (!proposal) return;
+  const m = T.matches.find(x => x.id === proposal.matchId);
+  if (!m || m.status === 'done') { rejectProposal(proposalId); return; }
+  m.legs1 = proposal.legs1;
+  m.legs2 = proposal.legs2;
+  const winResult = checkWinner(m.legs1, m.legs2, m);
+  if (winResult) {
+    m.winner = winResult === 'p1' ? m.p1 : m.p2;
+    m.status = 'done';
+    propagateKnockoutWinner(m);
+  }
+  rejectProposal(proposalId);
+  save();
+  render();
+}
+
+function rejectProposal(proposalId) {
+  if (!window._db || !T) return;
+  const { ref, remove } = window._firebaseModules;
+  remove(ref(window._db, `tournaments/${T.id}/proposals/${proposalId}`)).catch(console.error);
+}
+
+function propagateKnockoutWinner(m) {
+  if (!m || m.status !== 'done') return;
+  T.matches.forEach(dep => {
+    if (dep.phase !== 'knockout') return;
+    if (dep.status === 'done') return;
+    if (dep.fromMatch1 === m.id) dep.p1 = m.winner;
+    if (dep.fromMatch2 === m.id) dep.p2 = m.winner;
+  });
+  T.matches.forEach(dep => {
+    if (dep.phase !== 'knockout3rd') return;
+    if (dep.status === 'done') return;
+    if (dep.fromMatch1 === m.id) dep.p1 = m.p1 === m.winner ? m.p2 : m.p1;
+    if (dep.fromMatch2 === m.id) dep.p2 = m.p1 === m.winner ? m.p2 : m.p1;
+  });
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('toast-msg');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast-msg';
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a2540;border:1px solid rgba(148,170,255,0.3);color:#fff;padding:12px 20px;border-radius:12px;font-family:DM Sans,sans-serif;font-size:14px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:none';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }
 
 // ===================== ARCHIV =====================
@@ -1270,6 +1498,14 @@ function renderHeader() {
     : `<span class="view-badge">VIEW</span>
        <button onclick="openAdminLogin()" class="btn btn-ghost btn-sm" style="color:var(--primary);font-size:12px;min-height:32px">Admin</button>`;
 
+  const proposalCount = Object.keys(pendingProposals).length;
+  const proposalBadgeBtn = isAdmin && proposalCount > 0
+    ? `<button onclick="document.getElementById('proposals-panel-backdrop').classList.add('open')" style="position:relative;padding:6px 10px;background:rgba(235,101,255,0.12);border:1px solid rgba(235,101,255,0.3);border-radius:8px;color:var(--secondary);font-size:13px;cursor:pointer;min-height:32px">
+        &#128226;
+        <span id="proposal-badge" style="display:flex;position:absolute;top:-4px;right:-4px;background:var(--secondary);color:#fff;border-radius:99px;font-size:10px;width:18px;height:18px;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700">${proposalCount}</span>
+       </button>`
+    : `<span id="proposal-badge" style="display:none"></span>`;
+
   return `
     <div class="app-header">
       <div class="header-left">
@@ -1277,6 +1513,8 @@ function renderHeader() {
         <div class="app-tourname">${esc(T.cfg.name)}</div>
       </div>
       <div class="header-actions">
+        ${T.phase !== 'setup' ? `<button onclick="openQrModal()" style="padding:6px 10px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-size:13px;cursor:pointer;min-height:32px" title="QR Code">&#128241;</button>` : ''}
+        ${proposalBadgeBtn}
         ${T.phase !== 'setup' && isAdmin ? `<button id="save-now-btn" class="btn btn-ghost btn-sm" onclick="saveNow()" style="color:var(--secondary);font-size:12px;min-height:32px">Speichern</button>` : ''}
         ${isAdmin ? `<button class="btn btn-ghost btn-sm" onclick="openArchive()" style="font-size:12px;min-height:32px">Archiv</button>` : ''}
         ${adminHtml}
@@ -1392,6 +1630,7 @@ function renderSetup() {
       <span style="font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif">Standard-PIN: 1234 — bitte ändern!</span>
     </div>
 
+    ${renderProposalsPanel()}
     ${renderArchive()}
   `;
 }
@@ -1583,6 +1822,7 @@ function renderMatchCard(m, canStart, isNext) {
       </span>
       ${m.status === 'done' && isAdmin ? `<button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button>` : ''}
     </div>
+    ${!isAdmin && m.status === 'active' && m.p1 && m.p2 ? `<div style="padding:4px 8px 8px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:7px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">&#128226; Ergebnis melden</button></div>` : ''}
   `;
 }
 
@@ -1682,6 +1922,7 @@ function renderBracketMatch(m, canStart) {
       ${m.status === 'done' && isAdmin ? `<div style="padding:4px 12px 8px;display:flex;justify-content:flex-end"><button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button></div>` : ''}
       ${m.status === 'pending' && m.p1 && m.p2 && !canStart ? `<div style="padding:6px 12px;font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif">${isAdmin ? 'Wartet auf freies Board…' : 'Ausstehend'}</div>` : ''}
       ${m.status === 'pending' && canStart ? `<div style="padding:6px 12px;font-size:12px;color:var(--secondary);font-family:'Space Grotesk',sans-serif;font-weight:600">Klicken zum Starten</div>` : ''}
+      ${!isAdmin && m.status === 'active' && m.p1 && m.p2 ? `<div style="padding:6px 12px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:8px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">&#128226; Ergebnis melden</button></div>` : ''}
     </div>
   `;
 }
@@ -1997,6 +2238,7 @@ async function startTournament() {
   generateGroupMatches();
   T.phase = 'groups';
   save();
+  if (window._db) listenToTournament(T.id);
   render();
 }
 
@@ -2247,6 +2489,96 @@ function launchConfetti() {
   draw();
 }
 
+// ===================== QR CODE MODAL =====================
+function openQrModal() {
+  if (!T) return;
+  const url = getTournamentUrl(T.id);
+  document.getElementById('qr-tournament-name').textContent = T.cfg.name || 'Turnier';
+  document.getElementById('qr-url-text').textContent = url;
+  const qrDiv = document.getElementById('qr-code-img');
+  qrDiv.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}&bgcolor=0d1526&color=ffffff&margin=2" style="border-radius:8px;width:180px;height:180px">`;
+  document.getElementById('qr-modal-backdrop').classList.add('open');
+}
+function closeQrModal() {
+  document.getElementById('qr-modal-backdrop').classList.remove('open');
+}
+
+// ===================== PROPOSAL MODAL =====================
+let proposalMatchId = null;
+let proposalLegs1 = 0;
+let proposalLegs2 = 0;
+
+function openProposalModal(matchId) {
+  const m = T.matches.find(x => x.id === matchId);
+  if (!m || m.status === 'done') return;
+  proposalMatchId = matchId;
+  proposalLegs1 = 0;
+  proposalLegs2 = 0;
+  document.getElementById('proposal-p1-name').textContent = playerName(m.p1);
+  document.getElementById('proposal-p2-name').textContent = playerName(m.p2);
+  document.getElementById('proposal-score1').textContent = '0';
+  document.getElementById('proposal-score2').textContent = '0';
+  const needed = neededLegs(m);
+  document.getElementById('proposal-needed-info').textContent = `Best of ${matchLegs(m)} — wer zuerst ${needed} Leg${needed>1?'s':''} gewinnt`;
+  document.getElementById('proposal-match-title').textContent = m.isFinal ? 'Finale' : m.is3rd ? 'Platz 3' : m.phase === 'group' ? 'Gruppenspiel' : 'K.O.-Match';
+  document.getElementById('proposal-submit-btn').disabled = true;
+  document.getElementById('proposal-modal-backdrop').classList.add('open');
+}
+function closeProposalModal() {
+  document.getElementById('proposal-modal-backdrop').classList.remove('open');
+}
+function adjustProposalScore(player, dir) {
+  const m = T.matches.find(x => x.id === proposalMatchId);
+  if (!m) return;
+  const needed = neededLegs(m);
+  if (player === 'p1') {
+    if (dir === 'inc' && proposalLegs1 < needed) proposalLegs1++;
+    if (dir === 'dec' && proposalLegs1 > 0) proposalLegs1--;
+  } else {
+    if (dir === 'inc' && proposalLegs2 < needed) proposalLegs2++;
+    if (dir === 'dec' && proposalLegs2 > 0) proposalLegs2--;
+  }
+  document.getElementById('proposal-score1').textContent = proposalLegs1;
+  document.getElementById('proposal-score2').textContent = proposalLegs2;
+  const hasWinner = checkWinner(proposalLegs1, proposalLegs2, m);
+  document.getElementById('proposal-submit-btn').disabled = !hasWinner;
+}
+function submitProposalFromModal() {
+  submitProposal(proposalMatchId, proposalLegs1, proposalLegs2);
+}
+
+// ===================== PROPOSALS PANEL =====================
+function renderProposalsPanel() {
+  const entries = Object.entries(pendingProposals);
+  if (!isAdmin || entries.length === 0) return '';
+  const rows = entries.map(([pid, p]) => {
+    const m = T.matches.find(x => x.id === p.matchId);
+    if (!m) return '';
+    const n1 = esc(playerName(m.p1));
+    const n2 = esc(playerName(m.p2));
+    const winner = p.legs1 > p.legs2 ? n1 : n2;
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(148,170,255,0.08)">
+        <div style="flex:1;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text)">
+          <span style="font-weight:600">${n1}</span> <span style="color:var(--text3)">${p.legs1} : ${p.legs2}</span> <span style="font-weight:600">${n2}</span>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Vorgeschlagener Sieger: <span style="color:var(--tertiary)">${winner}</span></div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="approveProposal('${pid}')" style="padding:6px 12px;background:rgba(129,236,255,0.12);border:1px solid rgba(129,236,255,0.3);border-radius:8px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">&#10003; OK</button>
+          <button onclick="rejectProposal('${pid}')" style="padding:6px 10px;background:rgba(255,110,132,0.08);border:1px solid rgba(255,110,132,0.2);border-radius:8px;color:var(--red);font-size:13px;cursor:pointer">&#10005;</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  return `
+    <div class="section-title" style="margin-top:24px">
+      Gemeldete Ergebnisse
+      <span style="background:var(--secondary);color:#fff;border-radius:99px;font-size:11px;padding:2px 8px;margin-left:8px;font-family:'Space Grotesk',sans-serif;font-weight:700">${entries.length}</span>
+    </div>
+    <div class="card">${rows}</div>
+  `;
+}
+
 // ===================== UTILS =====================
 function esc(str) {
   if (!str) return '';
@@ -2259,21 +2591,14 @@ document.getElementById('modal-backdrop').addEventListener('click', function(e) 
 });
 
 // ===================== INIT =====================
-if (!load()) {
-  T = DEFAULT_STATE();
-  T.adminPin = '1234';
-  save();
-}
-if (!T.adminPin) T.adminPin = '1234';
-
 // Auto-admin on localhost for development
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
   isAdmin = true;
   appPhase = 'tournament';
 }
 
+// initFirebase handles loading from localStorage or Firebase and calls render()
 initFirebase();
-render();
 </script>
 </body>
 </html>
