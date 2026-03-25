@@ -1872,6 +1872,10 @@ function renderMatchCard(m, canStart, isNext) {
   const w1 = m.winner === m.p1;
   const w2 = m.winner === m.p2;
 
+  const proposalEntry = Object.entries(pendingProposals).find(([id, p]) => p.matchId === m.id);
+  const proposal = proposalEntry ? proposalEntry[1] : null;
+  const proposalId = proposalEntry ? proposalEntry[0] : null;
+
   return `
     ${isNext && m.status === 'pending' ? `<div class="next-up-label">NEXT UP</div>` : ''}
     <div class="${cls}" ${onclick ? `onclick="${onclick}"` : ''}>
@@ -1893,10 +1897,22 @@ function renderMatchCard(m, canStart, isNext) {
         ${w2 ? '<div class="match-winner-dot"></div>' : ''}
         <span class="match-player-name ${w2 ? 'text-green font-bold' : ''}">${esc(p2Name)}</span>
       </div>
-      ${m.status === 'active' ? `<span class="match-status-badge badge-active"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:var(--secondary);box-shadow:0 0 6px var(--secondary);animation:pulse-dot 1.2s infinite"></span>Live</span></span>` : m.status === 'done' ? `<span class="match-status-badge badge-done">Fertig</span>` : ''}
+      ${m.status === 'active' ? `<span class="match-status-badge badge-active"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:var(--secondary);box-shadow:0 0 6px var(--secondary);animation:pulse-dot 1.2s infinite"></span>Live</span></span>` : m.status === 'done' ? `<span class="match-status-badge badge-done">Fertig</span>` : proposal ? `<span class="match-status-badge" style="background:rgba(255,193,7,0.12);color:#ffc107;border:1px solid rgba(255,193,7,0.25)">⏳ Gemeldet</span>` : ''}
       ${m.status === 'done' && isAdmin ? `<button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button>` : ''}
     </div>
-    ${!isAdmin && m.status !== 'done' && m.p1 && m.p2 ? `<div style="padding:4px 8px 8px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:7px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Ergebnis melden</button></div>` : ''}
+    ${proposal && m.status !== 'done' ? isAdmin
+      ? `<div style="padding:4px 8px 8px"><div style="padding:8px 10px;background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.22);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span style="font-family:'Space Grotesk',sans-serif;font-size:12px;color:#ffc107;font-weight:700">Gemeldet: ${esc(p1Name)} <strong style="font-size:15px;font-family:'Bebas Neue',sans-serif">${proposal.legs1}:${proposal.legs2}</strong> ${esc(p2Name)}</span>
+          <span style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="event.stopPropagation();approveProposal('${proposalId}')" style="padding:4px 10px;background:rgba(129,236,255,0.15);border:1px solid rgba(129,236,255,0.35);border-radius:6px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;cursor:pointer">✓ OK</button>
+            <button onclick="event.stopPropagation();rejectProposal('${proposalId}')" style="padding:4px 10px;background:rgba(255,110,132,0.12);border:1px solid rgba(255,110,132,0.3);border-radius:6px;color:var(--red);font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;cursor:pointer">✕ Ablehnen</button>
+          </span>
+        </div></div>`
+      : `<div style="padding:4px 8px 8px"><div style="padding:7px 10px;background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.2);border-radius:8px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;color:#ffc107;font-family:'Space Grotesk',sans-serif;font-weight:600">⏳ Gemeldet: ${proposal.legs1} : ${proposal.legs2}</span>
+          <span style="font-size:11px;color:var(--text3);font-family:'DM Sans',sans-serif">Warte auf Admin</span>
+        </div></div>`
+    : !isAdmin && m.status !== 'done' && m.p1 && m.p2 ? `<div style="padding:4px 8px 8px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:7px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Ergebnis melden</button></div>` : ''}
   `;
 }
 
@@ -1957,6 +1973,9 @@ function renderBracketMatch(m, canStart) {
   if (m.status === 'active') cls += ' active-match';
   const clickable = isAdmin && m.status !== 'done' && (m.status === 'active' || canStart) && m.p1 && m.p2;
   const editDone = isAdmin && m.status === 'done' && !isFreilos;
+  const proposalEntry = Object.entries(pendingProposals).find(([id, p]) => p.matchId === m.id);
+  const proposal = proposalEntry ? proposalEntry[1] : null;
+  const proposalId = proposalEntry ? proposalEntry[0] : null;
 
   if (isFreilos) {
     const winner = m.winner;
@@ -1996,7 +2015,19 @@ function renderBracketMatch(m, canStart) {
       ${m.status === 'done' && isAdmin ? `<div style="padding:4px 12px 8px;display:flex;justify-content:flex-end"><button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button></div>` : ''}
       ${m.status === 'pending' && m.p1 && m.p2 && !canStart ? `<div style="padding:6px 12px;font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif">${isAdmin ? 'Wartet auf freies Board…' : 'Ausstehend'}</div>` : ''}
       ${m.status === 'pending' && canStart ? `<div style="padding:6px 12px;font-size:12px;color:var(--secondary);font-family:'Space Grotesk',sans-serif;font-weight:600">Klicken zum Starten</div>` : ''}
-      ${!isAdmin && m.status !== 'done' && m.p1 && m.p2 ? `<div style="padding:6px 12px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:8px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Ergebnis melden</button></div>` : ''}
+      ${proposal && m.status !== 'done' ? isAdmin
+        ? `<div style="padding:4px 12px 8px"><div style="padding:7px 10px;background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.22);border-radius:8px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:#ffc107;font-weight:700;margin-bottom:6px">⏳ Gemeldet: <strong style="font-family:'Bebas Neue',sans-serif;font-size:14px">${proposal.legs1} : ${proposal.legs2}</strong></div>
+            <div style="display:flex;gap:6px">
+              <button onclick="event.stopPropagation();approveProposal('${proposalId}')" style="flex:1;padding:5px;background:rgba(129,236,255,0.15);border:1px solid rgba(129,236,255,0.35);border-radius:6px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;cursor:pointer">✓ OK</button>
+              <button onclick="event.stopPropagation();rejectProposal('${proposalId}')" style="flex:1;padding:5px;background:rgba(255,110,132,0.12);border:1px solid rgba(255,110,132,0.3);border-radius:6px;color:var(--red);font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;cursor:pointer">✕ Ablehnen</button>
+            </div>
+          </div></div>`
+        : `<div style="padding:4px 12px 8px"><div style="padding:7px 10px;background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.2);border-radius:8px;display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:11px;color:#ffc107;font-family:'Space Grotesk',sans-serif;font-weight:600">⏳ Gemeldet: ${proposal.legs1} : ${proposal.legs2}</span>
+            <span style="font-size:10px;color:var(--text3);font-family:'DM Sans',sans-serif">Warte auf Admin</span>
+          </div></div>`
+      : !isAdmin && m.status !== 'done' && m.p1 && m.p2 ? `<div style="padding:6px 12px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:8px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Ergebnis melden</button></div>` : ''}
     </div>
   `;
 }
