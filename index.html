@@ -1811,7 +1811,7 @@ function renderMatchCard(m, canStart, isNext) {
       </span>` : ''}
       ${m.status === 'done' && isAdmin ? `<button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button>` : ''}
     </div>
-    ${!isAdmin && m.status === 'active' && m.p1 && m.p2 ? `<div style="padding:4px 8px 8px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:7px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">&#128226; Ergebnis melden</button></div>` : ''}
+    ${!isAdmin && m.status !== 'done' && m.p1 && m.p2 ? `<div style="padding:4px 8px 8px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:7px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">&#128226; Ergebnis melden</button></div>` : ''}
   `;
 }
 
@@ -1911,7 +1911,7 @@ function renderBracketMatch(m, canStart) {
       ${m.status === 'done' && isAdmin ? `<div style="padding:4px 12px 8px;display:flex;justify-content:flex-end"><button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button></div>` : ''}
       ${m.status === 'pending' && m.p1 && m.p2 && !canStart ? `<div style="padding:6px 12px;font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif">${isAdmin ? 'Wartet auf freies Board…' : 'Ausstehend'}</div>` : ''}
       ${m.status === 'pending' && canStart ? `<div style="padding:6px 12px;font-size:12px;color:var(--secondary);font-family:'Space Grotesk',sans-serif;font-weight:600">Klicken zum Starten</div>` : ''}
-      ${!isAdmin && m.status === 'active' && m.p1 && m.p2 ? `<div style="padding:6px 12px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:8px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">&#128226; Ergebnis melden</button></div>` : ''}
+      ${!isAdmin && m.status !== 'done' && m.p1 && m.p2 ? `<div style="padding:6px 12px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:8px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">&#128226; Ergebnis melden</button></div>` : ''}
     </div>
   `;
 }
