@@ -1922,8 +1922,8 @@ function renderMatchCard(m, canStart, isNext) {
 
   return `
     ${isNext && m.status === 'pending' ? `<div class="next-up-label">NEXT UP</div>` : ''}
-    <div class="${cls}" style="flex-direction:column;padding:0;gap:0" ${onclick ? `onclick="${onclick}"` : ''}>
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px">
+    <div class="${cls}" style="flex-direction:column;padding:0;gap:0;align-items:stretch" ${onclick ? `onclick="${onclick}"` : ''}>
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;width:100%">
         ${boardCol}
         <div class="match-player" style="flex:1">
           <span class="match-player-name ${w1 ? 'text-green font-bold' : ''}">${esc(p1Name)}</span>
