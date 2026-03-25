@@ -1879,7 +1879,6 @@ function renderMatchCard(m, canStart, isNext) {
         <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1;color:${m.status==='active'?'var(--secondary)':'var(--primary)'}">${m.boardNumber}</span>
       </div>` : ''}
       <div class="match-player" style="flex:1">
-        ${playerAvatar(m.p1, 24)}
         <span class="match-player-name ${w1 ? 'text-green font-bold' : ''}">${esc(p1Name)}</span>
         ${w1 ? '<div class="match-winner-dot"></div>' : ''}
       </div>
@@ -1888,10 +1887,9 @@ function renderMatchCard(m, canStart, isNext) {
         <span class="match-score-sep">:</span>
         <span class="match-score-num ${w2 ? 'text-green' : ''}" style="${m.status==='done'?'font-size:20px;font-family:Bebas Neue,sans-serif':''}">${m.legs2}</span>
       </div>
-      <div class="match-player" style="flex:1;flex-direction:row-reverse">
+      <div class="match-player" style="flex:1;flex-direction:row-reverse;text-align:right">
         ${w2 ? '<div class="match-winner-dot"></div>' : ''}
         <span class="match-player-name ${w2 ? 'text-green font-bold' : ''}">${esc(p2Name)}</span>
-        ${playerAvatar(m.p2, 24)}
       </div>
       ${(m.status !== 'pending' || isNext) ? `<span class="match-status-badge badge-${m.status}">
         ${m.status === 'pending' ? 'Next' : m.status === 'active' ? `<span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:var(--secondary);box-shadow:0 0 6px var(--secondary);animation:pulse-dot 1.2s infinite"></span>Live</span>` : 'Fertig'}
