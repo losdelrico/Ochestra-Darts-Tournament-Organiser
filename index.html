@@ -1919,15 +1919,16 @@ function renderMatchCard(m, canStart, isNext) {
           <div style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;padding:0 12px 0 2px;border-right:1px solid rgba(255,193,7,0.2);margin-right:6px;min-width:48px;flex-shrink:0">
             <span style="font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;color:rgba(255,193,7,0.55);text-transform:uppercase">GEMELDET</span>
           </div>
-          <div style="flex:1;min-width:0;overflow:hidden"><span style="visibility:hidden;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600">x</span></div>
-          <div class="match-score">
-            <span class="match-score-num" style="color:#ffc107">${proposal.legs1}</span>
-            <span class="match-score-sep" style="color:rgba(255,193,7,0.4)">:</span>
-            <span class="match-score-num" style="color:#ffc107">${proposal.legs2}</span>
-          </div>
-          <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:6px">
-            <button onclick="event.stopPropagation();approveProposalAnimated('${proposalId}',this)" style="padding:5px 14px;background:rgba(129,236,255,0.15);border:1px solid rgba(129,236,255,0.35);border-radius:6px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✓</button>
-            <button onclick="event.stopPropagation();rejectProposal('${proposalId}')" style="padding:5px 14px;background:rgba(255,110,132,0.12);border:1px solid rgba(255,110,132,0.3);border-radius:6px;color:var(--red);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✕</button>
+          <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center">
+            <div class="match-score">
+              <span class="match-score-num" style="color:#ffc107">${proposal.legs1}</span>
+              <span class="match-score-sep" style="color:rgba(255,193,7,0.4)">:</span>
+              <span class="match-score-num" style="color:#ffc107">${proposal.legs2}</span>
+            </div>
+            <div style="position:absolute;right:0;display:flex;gap:6px">
+              <button onclick="event.stopPropagation();approveProposalAnimated('${proposalId}',this)" style="padding:5px 14px;background:rgba(129,236,255,0.15);border:1px solid rgba(129,236,255,0.35);border-radius:6px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✓</button>
+              <button onclick="event.stopPropagation();rejectProposal('${proposalId}')" style="padding:5px 14px;background:rgba(255,110,132,0.12);border:1px solid rgba(255,110,132,0.3);border-radius:6px;color:var(--red);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✕</button>
+            </div>
           </div>
         </div>`
       : `<div style="margin-top:-1px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.2);border-top:none;border-radius:0 0 10px 10px;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px">
