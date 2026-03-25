@@ -680,13 +680,8 @@ let appPhase = 'landing';   // 'landing' | 'tournament'
 const DEFAULT_STATE = () => ({
   id: uid(),
   phase: 'setup',
-  cfg: { name: 'OCHESTRA', boards: 2, legsGroup: 3, legsKO: 5, legsFinal: 5, groupCount: 1, include3rd: true, advanceCount: 2 },
-  players: [
-    { id: uid(), name: 'Spieler 1' },
-    { id: uid(), name: 'Spieler 2' },
-    { id: uid(), name: 'Spieler 3' },
-    { id: uid(), name: 'Spieler 4' },
-  ],
+  cfg: { name: '', boards: 2, legsGroup: 3, legsKO: 5, legsFinal: 5, groupCount: 1, include3rd: true, advanceCount: 2 },
+  players: [],
   groups: [],
   matches: [],
   bracket: { rounds: [] },
@@ -758,12 +753,9 @@ function initFirebase() {
 }
 
 function initFromLocalStorage() {
-  if (!load()) {
-    T = DEFAULT_STATE();
-    T.adminPin = '1234';
-    save();
-  }
-  if (!T.adminPin) T.adminPin = '1234';
+  // Firebase is primary — always start fresh on landing (no ?t= param)
+  T = DEFAULT_STATE();
+  T.adminPin = '1234';
 }
 
 function listenToTournament(tid) {
