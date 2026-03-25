@@ -850,6 +850,8 @@ function updateProposalBadge() {
   }
   _lastProposalCount = count;
   _proposalsInitialized = true;
+  // Re-render match cards so proposal status is visible inline
+  render();
   // Refresh proposals panel list if open
   const panelList = document.getElementById('proposals-panel-list');
   if (panelList) {
