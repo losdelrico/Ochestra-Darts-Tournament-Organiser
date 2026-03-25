@@ -2290,7 +2290,7 @@ function liveRenamePlayer(pid, input) {
 async function newTournament() {
   if (!isAdmin) return;
   const hasProgress = T.matches.some(m => m.status === 'done');
-  const ok = await showConfirm('Neues Turnier?', hasProgress ? 'Aktueller Stand wird automatisch im Archiv gespeichert.' : 'Neues Turnier starten?');
+  const ok = await showConfirm('Turnier verlassen?', hasProgress ? 'Aktueller Stand wird automatisch im Archiv gespeichert.' : 'Neues Turnier starten?');
   if (!ok) return;
   if (hasProgress) archiveTournament();
   T = DEFAULT_STATE();
