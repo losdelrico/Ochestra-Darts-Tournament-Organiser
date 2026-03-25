@@ -1277,6 +1277,11 @@ function render() {
   }
   blobs.forEach(b => b.style.opacity = '');
 
+  // Viewers never see setup — forward to the active tournament phase
+  if (!isAdmin && T.phase === 'setup') {
+    T.phase = 'groups';
+  }
+
   let html = '';
   html += renderHeader();
   if (T.phase === 'setup') html += renderSetup();
@@ -1476,6 +1481,7 @@ function renderHeader() {
     else cls += ' locked';
     const clickable = i <= curr || (i === curr + 1 && canAdvance());
     const label = (p.key === 'setup' && T.phase !== 'setup') ? 'Neu' : p.label;
+    if (p.key === 'setup' && !isAdmin) return; // viewers never see setup tab
     tabs += `<button class="${cls}" data-phase="${p.key}" ${clickable ? '' : 'disabled'}>
       <span class="nav-icon">${p.icon}</span>
       <span>${label}</span>
