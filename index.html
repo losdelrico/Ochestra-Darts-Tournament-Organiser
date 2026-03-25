@@ -1301,6 +1301,7 @@ function render() {
           <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">Kein aktives Turnier</div>
           <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text3);max-width:280px;line-height:1.6;margin-bottom:32px">Scanne den QR-Code des aktiven Turniers.</div>
           <button onclick="openQrScanner()" style="padding:16px 32px;background:linear-gradient(135deg,var(--primary),var(--secondary));border:none;border-radius:14px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:0.08em;cursor:pointer;box-shadow:0 4px 24px rgba(148,170,255,0.3)">📷 QR-Code scannen</button>
+          <button onclick="openAdminLogin()" style="margin-top:24px;background:none;border:none;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px">Als Admin einloggen</button>
         </div>`;
       return;
     }
@@ -1320,6 +1321,7 @@ function render() {
         <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">Turnier wird vorbereitet…</div>
         <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text3);max-width:280px;line-height:1.6;margin-bottom:32px">Warte auf den Admin oder scanne den QR-Code des aktiven Turniers.</div>
         <button onclick="openQrScanner()" style="padding:16px 32px;background:linear-gradient(135deg,var(--primary),var(--secondary));border:none;border-radius:14px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:0.08em;cursor:pointer;box-shadow:0 4px 24px rgba(148,170,255,0.3)">📷 QR-Code scannen</button>
+        <button onclick="openAdminLogin()" style="margin-top:24px;background:none;border:none;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px">Als Admin einloggen</button>
       </div>`;
     return;
   }
