@@ -1895,9 +1895,9 @@ function renderMatchCard(m, canStart, isNext) {
 
   const hasBottomRow = (proposal && m.status !== 'done') || (!isAdmin && m.status !== 'done' && m.p1 && m.p2);
 
-  const bottomRow = proposal && m.status !== 'done'
+  const proposalRow = proposal && m.status !== 'done'
     ? isAdmin
-      ? `<div data-proposal-row style="border-top:1px solid rgba(255,193,7,0.18);background:rgba(255,193,7,0.06);display:flex;align-items:center;gap:12px;padding:10px 14px">
+      ? `<div data-proposal-row style="border-top:1px solid rgba(255,193,7,0.18);background:rgba(255,193,7,0.06);display:flex;align-items:center;gap:12px;padding:10px 14px;width:100%">
           <div style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;padding:0 12px 0 2px;border-right:1px solid rgba(255,193,7,0.2);margin-right:6px;min-width:48px;flex-shrink:0">
             <span style="font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;color:rgba(255,193,7,0.55);text-transform:uppercase">GEMELDET</span>
           </div>
@@ -1912,13 +1912,11 @@ function renderMatchCard(m, canStart, isNext) {
             <button onclick="event.stopPropagation();approveProposalAnimated('${proposalId}',this)" style="padding:5px 12px;background:rgba(129,236,255,0.15);border:1px solid rgba(129,236,255,0.35);border-radius:6px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✓</button>
           </div>
         </div>`
-      : `<div style="border-top:1px solid rgba(255,193,7,0.18);background:rgba(255,193,7,0.06);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      : `<div style="border-top:1px solid rgba(255,193,7,0.18);background:rgba(255,193,7,0.06);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%">
           <span style="font-size:12px;color:#ffc107;font-family:'Space Grotesk',sans-serif;font-weight:600">⏳ Gemeldet: ${proposal.legs1} : ${proposal.legs2}</span>
           <span style="font-size:11px;color:var(--text3);font-family:'DM Sans',sans-serif;flex-shrink:0">Warte auf Admin</span>
         </div>`
-    : !isAdmin && m.status !== 'done' && m.p1 && m.p2
-      ? `<div style="border-top:1px solid var(--glass-border);padding:8px 12px"><button onclick="event.stopPropagation();openProposalModal('${m.id}')" style="width:100%;padding:7px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Ergebnis melden</button></div>`
-      : '';
+    : '';
 
   return `
     ${isNext && m.status === 'pending' ? `<div class="next-up-label">NEXT UP</div>` : ''}
@@ -1941,8 +1939,9 @@ function renderMatchCard(m, canStart, isNext) {
         ${m.status === 'active' ? `<span class="match-status-badge badge-active"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:var(--secondary);box-shadow:0 0 6px var(--secondary);animation:pulse-dot 1.2s infinite"></span>Live</span></span>` : m.status === 'done' ? `<span class="match-status-badge badge-done">Fertig</span>` : ''}
         ${m.status === 'done' && isAdmin ? `<button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button>` : ''}
       </div>
-      ${bottomRow}
+      ${proposalRow}
     </div>
+    ${!isAdmin && m.status !== 'done' && m.p1 && m.p2 && !proposal ? `<div style="padding:4px 8px 8px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:7px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Ergebnis melden</button></div>` : ''}
   `;
 }
 
