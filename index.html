@@ -584,16 +584,6 @@
   </div>
 </div>
 
-<!-- PROPOSALS PANEL MODAL -->
-<div id="proposals-panel-backdrop" class="confirm-backdrop" onclick="if(event.target===this)this.classList.remove('open')">
-  <div style="background:#0d1526;border:1px solid rgba(148,170,255,0.15);border-radius:20px;padding:24px 20px;max-width:440px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.6)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h3 style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#fff;margin:0">Gemeldete Ergebnisse</h3>
-      <button onclick="document.getElementById('proposals-panel-backdrop').classList.remove('open')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;padding:6px 10px;cursor:pointer;font-size:14px">&#10005;</button>
-    </div>
-    <div id="proposals-panel-list"></div>
-  </div>
-</div>
 
 <!-- QR CODE MODAL -->
 <div id="qr-modal-backdrop" class="confirm-backdrop">
@@ -843,20 +833,15 @@ function updateProposalBadge() {
     playBell();
     showToast('🔔 Neues Ergebnis gemeldet!');
   }
-  // Auto-close proposals panel when empty
-  if (count === 0) {
-    const panel = document.getElementById('proposals-panel-backdrop');
-    if (panel) panel.classList.remove('open');
-  }
   _lastProposalCount = count;
   _proposalsInitialized = true;
   // Re-render match cards so proposal status is visible inline
   render();
-  // Refresh proposals panel list if open
+  // (legacy panel list cleanup — kept for safety)
   const panelList = document.getElementById('proposals-panel-list');
   if (panelList) {
     if (!isAdmin || count === 0) {
-      panelList.innerHTML = '<div style="text-align:center;padding:24px;color:rgba(255,255,255,0.3);font-family:\'DM Sans\',sans-serif;font-size:14px">Keine offenen Meldungen.</div>';
+      panelList.innerHTML = '';
     } else {
       const entries = Object.entries(pendingProposals);
       panelList.innerHTML = entries.map(([pid, p]) => {
@@ -1581,7 +1566,7 @@ function renderHeader() {
 
   const proposalCount = Object.keys(pendingProposals).length;
   const proposalBadgeBtn = isAdmin
-    ? `<button onclick="document.getElementById('proposals-panel-backdrop').classList.add('open')" id="proposal-bell-btn" style="position:relative;padding:6px 10px;background:${proposalCount > 0 ? 'rgba(235,101,255,0.15)' : 'rgba(148,170,255,0.06)'};border:1px solid ${proposalCount > 0 ? 'rgba(235,101,255,0.4)' : 'var(--glass-border)'};border-radius:8px;color:${proposalCount > 0 ? 'var(--secondary)' : 'var(--text3)'};cursor:pointer;min-height:32px;transition:all 0.2s">
+    ? `<button onclick="scrollToFirstProposal()" id="proposal-bell-btn" style="position:relative;padding:6px 10px;background:${proposalCount > 0 ? 'rgba(235,101,255,0.15)' : 'rgba(148,170,255,0.06)'};border:1px solid ${proposalCount > 0 ? 'rgba(235,101,255,0.4)' : 'var(--glass-border)'};border-radius:8px;color:${proposalCount > 0 ? 'var(--secondary)' : 'var(--text3)'};cursor:pointer;min-height:32px;transition:all 0.2s">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span id="proposal-badge" style="display:${proposalCount > 0 ? 'flex' : 'none'};position:absolute;top:-5px;right:-5px;background:var(--secondary);color:#fff;border-radius:99px;font-size:10px;width:18px;height:18px;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;box-shadow:0 0 8px rgba(235,101,255,0.6)">${proposalCount}</span>
        </button>`
@@ -1710,7 +1695,6 @@ function renderSetup() {
       <span style="font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif">Standard-PIN: 1234 — bitte ändern!</span>
     </div>
 
-    ${renderProposalsPanel()}
     ${renderArchive()}
   `;
 }
@@ -2675,36 +2659,16 @@ function submitProposalFromModal() {
   submitProposal(proposalMatchId, proposalLegs1, proposalLegs2);
 }
 
-// ===================== PROPOSALS PANEL =====================
-function renderProposalsPanel() {
-  const entries = Object.entries(pendingProposals);
-  if (!isAdmin || entries.length === 0) return '';
-  const rows = entries.map(([pid, p]) => {
-    const m = T.matches.find(x => x.id === p.matchId);
-    if (!m) return '';
-    const n1 = esc(playerName(m.p1));
-    const n2 = esc(playerName(m.p2));
-    const winner = p.legs1 > p.legs2 ? n1 : n2;
-    return `
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(148,170,255,0.08)">
-        <div style="flex:1;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text)">
-          <span style="font-weight:600">${n1}</span> <span style="color:var(--text3)">${p.legs1} : ${p.legs2}</span> <span style="font-weight:600">${n2}</span>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Vorgeschlagener Sieger: <span style="color:var(--tertiary)">${winner}</span></div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button onclick="approveProposal('${pid}')" style="padding:6px 12px;background:rgba(129,236,255,0.12);border:1px solid rgba(129,236,255,0.3);border-radius:8px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">&#10003; OK</button>
-          <button onclick="rejectProposal('${pid}')" style="padding:6px 10px;background:rgba(255,110,132,0.08);border:1px solid rgba(255,110,132,0.2);border-radius:8px;color:var(--red);font-size:13px;cursor:pointer">&#10005;</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-  return `
-    <div class="section-title" style="margin-top:24px">
-      Gemeldete Ergebnisse
-      <span style="background:var(--secondary);color:#fff;border-radius:99px;font-size:11px;padding:2px 8px;margin-left:8px;font-family:'Space Grotesk',sans-serif;font-weight:700">${entries.length}</span>
-    </div>
-    <div class="card">${rows}</div>
-  `;
+// ===================== SCROLL TO FIRST PROPOSAL =====================
+function scrollToFirstProposal() {
+  if (!T) return;
+  const firstMatch = T.matches.find(m => Object.values(pendingProposals).some(p => p.matchId === m.id));
+  if (!firstMatch) return;
+  // Find the rendered card by looking for the amber proposal row
+  const amberRows = document.querySelectorAll('[style*="rgba(255,193,7"]');
+  if (amberRows.length > 0) {
+    amberRows[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 // ===================== UTILS =====================
