@@ -683,7 +683,7 @@ let T = null;
 let modalMatchId = null;
 let confirmCb = null;
 let confettiAnim = null;
-let groupTab = 'spielplan'; // 'spielplan' | 'tabelle'
+let groupTab = 'spielplan'; // 'spielplan' | 'resultate' | 'tabelle'
 let appPhase = 'landing';   // 'landing' | 'tournament'
 
 const DEFAULT_STATE = () => ({
@@ -888,6 +888,7 @@ function approveProposal(proposalId) {
   if (winResult) {
     m.winner = winResult === 'p1' ? m.p1 : m.p2;
     m.status = 'done';
+    m.completedAt = Date.now();
     propagateKnockoutWinner(m);
   }
   rejectProposal(proposalId);
@@ -1567,9 +1568,9 @@ function renderHeader() {
 
   const proposalCount = Object.keys(pendingProposals).length;
   const proposalBadgeBtn = isAdmin
-    ? `<button onclick="scrollToFirstProposal()" id="proposal-bell-btn" style="position:relative;padding:6px 10px;background:${proposalCount > 0 ? 'rgba(235,101,255,0.15)' : 'rgba(148,170,255,0.06)'};border:1px solid ${proposalCount > 0 ? 'rgba(235,101,255,0.4)' : 'var(--glass-border)'};border-radius:8px;color:${proposalCount > 0 ? 'var(--secondary)' : 'var(--text3)'};cursor:pointer;min-height:32px;transition:all 0.2s">
+    ? `<button onclick="scrollToFirstProposal()" id="proposal-bell-btn" style="position:relative;padding:6px 10px;background:${proposalCount > 0 ? 'rgba(255,193,7,0.12)' : 'rgba(148,170,255,0.06)'};border:1px solid ${proposalCount > 0 ? 'rgba(255,193,7,0.4)' : 'var(--glass-border)'};border-radius:8px;color:${proposalCount > 0 ? '#ffc107' : 'var(--text3)'};cursor:pointer;min-height:32px;transition:all 0.2s">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <span id="proposal-badge" style="display:${proposalCount > 0 ? 'flex' : 'none'};position:absolute;top:-5px;right:-5px;background:var(--secondary);color:#fff;border-radius:99px;font-size:10px;width:18px;height:18px;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;box-shadow:0 0 8px rgba(235,101,255,0.6)">${proposalCount}</span>
+        <span id="proposal-badge" style="display:${proposalCount > 0 ? 'flex' : 'none'};position:absolute;top:-5px;right:-5px;background:#ffc107;color:#000;border-radius:99px;font-size:10px;width:18px;height:18px;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;box-shadow:0 0 8px rgba(255,193,7,0.5)">${proposalCount}</span>
        </button>`
     : `<span id="proposal-badge" style="display:none"></span>`;
 
@@ -1773,6 +1774,7 @@ function renderGroups() {
   const tabBar = `
     <div class="phase-tabs">
       <button class="phase-tab ${groupTab === 'spielplan' ? 'active' : ''}" onclick="setGroupTab('spielplan')">Spielplan</button>
+      <button class="phase-tab ${groupTab === 'resultate' ? 'active' : ''}" onclick="setGroupTab('resultate')" style="position:relative">${totalDone > 0 ? `Resultate <span style="background:rgba(129,236,255,0.2);color:var(--tertiary);border-radius:99px;font-size:10px;padding:1px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;margin-left:4px">${totalDone}</span>` : 'Resultate'}</button>
       <button class="phase-tab ${groupTab === 'tabelle' ? 'active' : ''}" onclick="setGroupTab('tabelle')">Tabelle</button>
     </div>
   `;
@@ -1780,6 +1782,31 @@ function renderGroups() {
   let content = '';
   if (groupTab === 'tabelle') {
     content = T.groups.map(g => renderGroupStandings(g)).join('');
+  } else if (groupTab === 'resultate') {
+    const doneMatches = T.matches
+      .filter(m => m.phase === 'group' && m.status === 'done')
+      .slice()
+      .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+    if (doneMatches.length === 0) {
+      content = `<div style="text-align:center;padding:40px 20px;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:14px">Noch keine Resultate</div>`;
+    } else {
+      const rows = doneMatches.map(m => {
+        const n1 = esc(playerName(m.p1));
+        const n2 = esc(playerName(m.p2));
+        const w1 = m.winner === m.p1;
+        const w2 = m.winner === m.p2;
+        const groupName = T.groups.length > 1 ? T.groups.find(g => g.id === m.groupId)?.name || '' : '';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--glass-border)">
+          ${groupName ? `<span style="font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;min-width:16px">${esc(groupName.replace('Gruppe ',''))}</span>` : ''}
+          <span style="flex:1;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:${w1?'700':'500'};color:${w1?'var(--tertiary)':'var(--text2)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n1}</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${w1?'var(--tertiary)':'var(--text3)'};min-width:18px;text-align:right">${m.legs1}</span>
+          <span style="color:var(--text3);font-size:12px;padding:0 2px">:</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${w2?'var(--tertiary)':'var(--text3)'};min-width:18px;text-align:left">${m.legs2}</span>
+          <span style="flex:1;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:${w2?'700':'500'};color:${w2?'var(--tertiary)':'var(--text2)'};text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n2}</span>
+        </div>`;
+      }).join('');
+      content = `<div class="card" style="padding:0;overflow:hidden">${rows}</div>`;
+    }
   } else {
     // Spielplan: interleave by group (A→B→A→B), active first, then pending, done at end
     const groupIds = T.groups.map(g => g.id);
@@ -1889,17 +1916,16 @@ function renderMatchCard(m, canStart, isNext) {
     </div>
     ${proposal && m.status !== 'done' ? isAdmin
       ? `<div data-proposal-row style="margin-top:-1px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.22);border-top:none;border-radius:0 0 10px 10px;padding:10px 14px;display:flex;align-items:center;gap:12px">
-          <div style="display:flex;align-items:center;justify-content:center;min-width:48px;flex-shrink:0;padding:0 12px 0 2px;border-right:1px solid rgba(255,193,7,0.2);margin-right:6px">
+          <div style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;padding:0 12px 0 2px;border-right:1px solid rgba(255,193,7,0.2);margin-right:6px;min-width:48px;flex-shrink:0">
             <span style="font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;color:rgba(255,193,7,0.55);text-transform:uppercase">GEMELDET</span>
           </div>
-          <div style="flex:1"></div>
-          <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
-            <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1;color:#ffc107">${proposal.legs1}</span>
-            <span style="color:rgba(255,193,7,0.4);font-size:13px">:</span>
-            <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1;color:#ffc107">${proposal.legs2}</span>
+          <div style="flex:1;min-width:0;overflow:hidden"><span style="visibility:hidden;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600">x</span></div>
+          <div class="match-score">
+            <span class="match-score-num" style="color:#ffc107">${proposal.legs1}</span>
+            <span class="match-score-sep" style="color:rgba(255,193,7,0.4)">:</span>
+            <span class="match-score-num" style="color:#ffc107">${proposal.legs2}</span>
           </div>
-          <div style="flex:1"></div>
-          <div style="display:flex;gap:6px;flex-shrink:0">
+          <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:6px">
             <button onclick="event.stopPropagation();approveProposalAnimated('${proposalId}',this)" style="padding:5px 14px;background:rgba(129,236,255,0.15);border:1px solid rgba(129,236,255,0.35);border-radius:6px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✓</button>
             <button onclick="event.stopPropagation();rejectProposal('${proposalId}')" style="padding:5px 14px;background:rgba(255,110,132,0.12);border:1px solid rgba(255,110,132,0.3);border-radius:6px;color:var(--red);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✕</button>
           </div>
@@ -2253,6 +2279,7 @@ function saveScore() {
 
   m.winner = winResult === 'p1' ? m.p1 : m.p2;
   m.status = 'done';
+  m.completedAt = Date.now();
 
   propagateKnockout(m.id);
   save();
@@ -2675,14 +2702,8 @@ function approveProposalAnimated(proposalId, btn) {
 
 // ===================== SCROLL TO FIRST PROPOSAL =====================
 function scrollToFirstProposal() {
-  if (!T) return;
-  const firstMatch = T.matches.find(m => Object.values(pendingProposals).some(p => p.matchId === m.id));
-  if (!firstMatch) return;
-  // Find the rendered card by looking for the amber proposal row
-  const amberRows = document.querySelectorAll('[style*="rgba(255,193,7"]');
-  if (amberRows.length > 0) {
-    amberRows[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+  const row = document.querySelector('[data-proposal-row]');
+  if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // ===================== UTILS =====================
