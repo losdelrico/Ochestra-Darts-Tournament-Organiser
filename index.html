@@ -94,7 +94,7 @@
       position: sticky;
       top: 0;
       z-index: 50;
-      padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+      padding: 14px max(16px, env(safe-area-inset-right)) 14px max(16px, env(safe-area-inset-left));
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -102,7 +102,7 @@
     }
     .app-logo {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px;
+      font-size: 26px;
       color: var(--primary);
       letter-spacing: 0.05em;
       line-height: 1;
@@ -112,10 +112,10 @@
       font-size: 13px;
       color: var(--text2);
       line-height: 1;
-      margin-top: 2px;
+      margin-top: 3px;
     }
     .header-left { display: flex; flex-direction: column; }
-    .header-actions { display: flex; gap: 6px; align-items: center; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
 
     /* --- ADMIN/VIEW BADGES --- */
     .admin-badge { font-family:'Space Grotesk',sans-serif; font-size:9px; font-weight:700; letter-spacing:0.1em; padding:3px 8px; border-radius:100px; background:rgba(235,101,255,0.2); color:var(--secondary); border:1px solid rgba(235,101,255,0.3); text-transform:uppercase; }
@@ -1562,14 +1562,14 @@ function renderHeader() {
 
   const adminHtml = isAdmin
     ? `<span class="admin-badge">ADMIN</span>
-       <button onclick="logoutAdmin()" class="btn btn-ghost btn-sm" style="color:var(--text3);font-size:12px;min-height:32px">Logout</button>`
+       <button onclick="logoutAdmin()" class="btn btn-ghost btn-sm" style="color:var(--text3);font-size:13px;min-height:44px;padding:10px 14px">Logout</button>`
     : `<span class="view-badge">VIEW</span>
-       <button onclick="openAdminLogin()" class="btn btn-ghost btn-sm" style="color:var(--primary);font-size:12px;min-height:32px">Admin</button>`;
+       <button onclick="openAdminLogin()" class="btn btn-ghost btn-sm" style="color:var(--primary);font-size:13px;min-height:44px;padding:10px 14px">Admin</button>`;
 
   const proposalCount = Object.keys(pendingProposals).length;
   const proposalBadgeBtn = isAdmin
-    ? `<button onclick="scrollToFirstProposal()" id="proposal-bell-btn" style="position:relative;padding:6px 10px;background:${proposalCount > 0 ? 'rgba(255,193,7,0.12)' : 'rgba(148,170,255,0.06)'};border:1px solid ${proposalCount > 0 ? 'rgba(255,193,7,0.4)' : 'var(--glass-border)'};border-radius:8px;color:${proposalCount > 0 ? '#ffc107' : 'var(--text3)'};cursor:pointer;min-height:32px;transition:all 0.2s">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    ? `<button onclick="scrollToFirstProposal()" id="proposal-bell-btn" style="position:relative;padding:10px 14px;background:${proposalCount > 0 ? 'rgba(255,193,7,0.12)' : 'rgba(148,170,255,0.06)'};border:1px solid ${proposalCount > 0 ? 'rgba(255,193,7,0.4)' : 'var(--glass-border)'};border-radius:10px;color:${proposalCount > 0 ? '#ffc107' : 'var(--text3)'};cursor:pointer;min-height:44px;min-width:44px;display:flex;align-items:center;justify-content:center;transition:all 0.2s">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span id="proposal-badge" style="display:${proposalCount > 0 ? 'flex' : 'none'};position:absolute;top:-5px;right:-5px;background:#ffc107;color:#000;border-radius:99px;font-size:10px;width:18px;height:18px;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;box-shadow:0 0 8px rgba(255,193,7,0.5)">${proposalCount}</span>
        </button>`
     : `<span id="proposal-badge" style="display:none"></span>`;
@@ -1581,9 +1581,9 @@ function renderHeader() {
         <div class="app-tourname">${esc(T.cfg.name)}</div>
       </div>
       <div class="header-actions">
-        <button onclick="openQrModal()" style="padding:6px 10px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-size:13px;cursor:pointer;min-height:32px" title="QR Code">&#128241;</button>
+        <button onclick="openQrModal()" style="padding:10px 14px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:10px;color:var(--primary);font-size:18px;cursor:pointer;min-height:44px;min-width:44px;display:flex;align-items:center;justify-content:center" title="QR Code">&#128241;</button>
         ${proposalBadgeBtn}
-        ${isAdmin ? `<button class="btn btn-ghost btn-sm" onclick="openArchive()" style="font-size:12px;min-height:32px">Archiv</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-ghost btn-sm" onclick="openArchive()" style="font-size:13px;min-height:44px;padding:10px 14px">Archiv</button>` : ''}
         ${adminHtml}
       </div>
     </div>
