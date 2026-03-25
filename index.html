@@ -784,6 +784,7 @@ function listenToTournament(tid) {
   _tournamentListener = () => stateRef.off();
   stateRef.on('value', (snapshot) => {
     if (isAdmin) return; // admin owns the state
+    if (appPhase !== 'tournament') return; // don't overwrite landing/QR screen
     const data = snapshot.val();
     if (data) {
       T = data;
