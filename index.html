@@ -975,7 +975,9 @@ function loadSave(id) {
   if (!s) return;
   T = JSON.parse(s.state);
   if (!T.adminPin) T.adminPin = '1234';
+  _proposalsInitialized = false; // reset so first fire doesn't trigger bell
   save();
+  if (window._db && T.id) listenToTournament(T.id);
   render();
 }
 function deleteSave(id) {
