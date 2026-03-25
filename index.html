@@ -695,7 +695,6 @@ const DEFAULT_STATE = () => ({
   matches: [],
   bracket: { rounds: [] },
   activeMatches: [],
-  results: {},
   adminPin: '1234'
 });
 
@@ -762,10 +761,8 @@ function initFirebase() {
 }
 
 function initFromLocalStorage() {
-  // Firebase is primary — always start fresh on landing (no ?t= param)
   T = DEFAULT_STATE();
   T.adminPin = '1234';
-  saveToFirebase(); // ensure new tournament ID exists in Firebase immediately
 }
 
 function listenToTournament(tid) {
@@ -802,9 +799,11 @@ function getTournamentUrl(tid) {
 }
 
 // ===================== PROPOSALS =====================
+let _audioCtx = null;
 function playBell() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _audioCtx;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
@@ -836,35 +835,7 @@ function updateProposalBadge() {
   }
   _lastProposalCount = count;
   _proposalsInitialized = true;
-  // Re-render match cards so proposal status is visible inline
   render();
-  // (legacy panel list cleanup — kept for safety)
-  const panelList = document.getElementById('proposals-panel-list');
-  if (panelList) {
-    if (!isAdmin || count === 0) {
-      panelList.innerHTML = '';
-    } else {
-      const entries = Object.entries(pendingProposals);
-      panelList.innerHTML = entries.map(([pid, p]) => {
-        if (!T) return '';
-        const m = T.matches.find(x => x.id === p.matchId);
-        if (!m) return '';
-        const n1 = esc(playerName(m.p1));
-        const n2 = esc(playerName(m.p2));
-        const winner = p.legs1 > p.legs2 ? n1 : n2;
-        return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(148,170,255,0.08)">
-          <div style="flex:1;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text)">
-            <span style="font-weight:600">${n1}</span> <span style="color:var(--text3)">${p.legs1} : ${p.legs2}</span> <span style="font-weight:600">${n2}</span>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">Vorgeschlagener Sieger: <span style="color:var(--tertiary)">${winner}</span></div>
-          </div>
-          <div style="display:flex;gap:6px">
-            <button onclick="approveProposal('${pid}')" style="padding:6px 12px;background:rgba(129,236,255,0.12);border:1px solid rgba(129,236,255,0.3);border-radius:8px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">&#10003; OK</button>
-            <button onclick="rejectProposal('${pid}')" style="padding:6px 10px;background:rgba(255,110,132,0.08);border:1px solid rgba(255,110,132,0.2);border-radius:8px;color:var(--red);font-size:13px;cursor:pointer">&#10005;</button>
-          </div>
-        </div>`;
-      }).join('');
-    }
-  }
 }
 
 function submitProposal(matchId, legs1, legs2) {
@@ -889,7 +860,7 @@ function approveProposal(proposalId) {
     m.winner = winResult === 'p1' ? m.p1 : m.p2;
     m.status = 'done';
     m.completedAt = Date.now();
-    propagateKnockoutWinner(m);
+    propagateKnockout(m.id);
   }
   rejectProposal(proposalId);
   save();
@@ -899,22 +870,6 @@ function approveProposal(proposalId) {
 function rejectProposal(proposalId) {
   if (!window._db || !T) return;
   window._db.ref(`tournaments/${T.id}/proposals/${proposalId}`).remove().catch(console.error);
-}
-
-function propagateKnockoutWinner(m) {
-  if (!m || m.status !== 'done') return;
-  T.matches.forEach(dep => {
-    if (dep.phase !== 'knockout') return;
-    if (dep.status === 'done') return;
-    if (dep.fromMatch1 === m.id) dep.p1 = m.winner;
-    if (dep.fromMatch2 === m.id) dep.p2 = m.winner;
-  });
-  T.matches.forEach(dep => {
-    if (dep.phase !== 'knockout3rd') return;
-    if (dep.status === 'done') return;
-    if (dep.fromMatch1 === m.id) dep.p1 = m.p1 === m.winner ? m.p2 : m.p1;
-    if (dep.fromMatch2 === m.id) dep.p2 = m.p1 === m.winner ? m.p2 : m.p1;
-  });
 }
 
 function showToast(msg) {
@@ -973,20 +928,6 @@ function deleteSave(id) {
   const saves = getSaves().filter(s => s.id !== id);
   setSaves(saves);
   render();
-}
-function saveNow() {
-  archiveTournament();
-  render();
-  const btn = document.getElementById('save-now-btn');
-  if (btn) { btn.textContent = 'Gespeichert'; btn.disabled = true; setTimeout(() => render(), 1200); }
-}
-
-function load() {
-  try {
-    const s = localStorage.getItem('dart-turnier');
-    if (s) { T = JSON.parse(s); if (!T.id) T.id = uid(); return true; }
-  } catch(e) {}
-  return false;
 }
 
 // ===================== PLAYER COLORS =====================
@@ -1359,15 +1300,9 @@ function render() {
   else if (T.phase === 'knockout') html += renderKnockout();
   else if (T.phase === 'results') html += renderResults();
   app.innerHTML = html;
-  bindSetupEvents();
   bindPhaseNavEvents();
 }
 
-function enterAsViewer() {
-  isAdmin = false;
-  appPhase = 'tournament';
-  render();
-}
 
 function landingViewTournament(id) {
   if (id !== '__current__') {
@@ -1453,8 +1388,6 @@ function showLandingPin(id, mode = 'admin') {
 function renderLanding() {
   const phaseLabels = { setup: 'Setup', groups: 'Vorrunde', knockout: 'K.O.-Phase', results: 'Abgeschlossen' };
   const phaseColors = { setup: 'var(--text3)', groups: 'var(--primary)', knockout: 'var(--secondary)', results: 'var(--tertiary)' };
-  const totalMatches = T.matches.filter(m => m.phase === 'group' || m.phase === 'knockout').length;
-  const doneMathces = T.matches.filter(m => m.status === 'done').length;
   const activeTournament = T.phase !== 'setup';
 
   const saves = getSaves();
@@ -1855,11 +1788,11 @@ function renderBoardSlots() {
   const active = getActiveBoardMatches();
   if (active.length === 0) return '';
   let html = '<div class="boards-row">';
-  for (let i = 0; i < T.cfg.boards; i++) {
-    const m = active[i];
+  for (let i = 1; i <= T.cfg.boards; i++) {
+    const m = active.find(x => x.boardNumber === i);
     if (m) {
       html += `<div class="board-slot occupied">
-        <div class="board-slot-title">Board ${i + 1}</div>
+        <div class="board-slot-title">Board ${i}</div>
         <div class="board-slot-match">${esc(playerName(m.p1))} vs ${esc(playerName(m.p2))}</div>
       </div>`;
     }
@@ -2253,7 +2186,6 @@ function adjustScore(dir, player) {
   const winResult = checkWinner(m.legs1, m.legs2, m);
 
   save();
-  archiveTournament();
 
   document.getElementById('score1').textContent = m.legs1;
   document.getElementById('score2').textContent = m.legs2;
@@ -2290,7 +2222,6 @@ function saveScore() {
 
   propagateKnockout(m.id);
   save();
-  archiveTournament();
   closeModal();
   render();
 
@@ -2339,14 +2270,6 @@ function undoMatch(matchId) {
 
 function closeModal() {
   document.getElementById('modal-backdrop').classList.remove('open');
-  const m = T.matches.find(x => x.id === modalMatchId);
-  if (m && m.status === 'active') {
-    m.status = 'pending';
-    m.legs1 = 0;
-    m.legs2 = 0;
-    save();
-    render();
-  }
   modalMatchId = null;
 }
 
@@ -2573,10 +2496,6 @@ function bindPhaseNavEvents() {
   });
 }
 
-// ===================== SETUP EVENTS =====================
-function bindSetupEvents() {
-  // handlers are inline
-}
 
 // ===================== CONFETTI =====================
 function launchConfetti() {
