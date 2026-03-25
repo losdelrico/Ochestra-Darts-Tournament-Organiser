@@ -1505,7 +1505,7 @@ function renderHeader() {
         <div class="app-tourname">${esc(T.cfg.name)}</div>
       </div>
       <div class="header-actions">
-        ${T.phase !== 'setup' ? `<button onclick="openQrModal()" style="padding:6px 10px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-size:13px;cursor:pointer;min-height:32px" title="QR Code">&#128241;</button>` : ''}
+        <button onclick="openQrModal()" style="padding:6px 10px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-size:13px;cursor:pointer;min-height:32px" title="QR Code">&#128241;</button>
         ${proposalBadgeBtn}
         ${T.phase !== 'setup' && isAdmin ? `<button id="save-now-btn" class="btn btn-ghost btn-sm" onclick="saveNow()" style="color:var(--secondary);font-size:12px;min-height:32px">Speichern</button>` : ''}
         ${isAdmin ? `<button class="btn btn-ghost btn-sm" onclick="openArchive()" style="font-size:12px;min-height:32px">Archiv</button>` : ''}
