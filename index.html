@@ -725,6 +725,7 @@ function saveToFirebase() {
 let _tournamentListener = null;
 let _proposalListener = null;
 let pendingProposals = {};
+let _lastProposalCount = 0;
 
 function initFirebase() {
   try {
@@ -809,6 +810,20 @@ function getTournamentUrl(tid) {
 }
 
 // ===================== PROPOSALS =====================
+function playBell() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.6);
+  } catch(e) {}
+}
+
 function updateProposalBadge() {
   const count = Object.keys(pendingProposals).length;
   const badge = document.getElementById('proposal-badge');
@@ -816,6 +831,12 @@ function updateProposalBadge() {
     badge.textContent = count;
     badge.style.display = count > 0 ? 'flex' : 'none';
   }
+  // Bell notification for admin when new proposal arrives
+  if (isAdmin && count > _lastProposalCount) {
+    playBell();
+    showToast(`🔔 Neues Ergebnis gemeldet! (${count})`);
+  }
+  _lastProposalCount = count;
   // Refresh proposals panel list if open
   const panelList = document.getElementById('proposals-panel-list');
   if (panelList) {
@@ -1558,7 +1579,6 @@ function renderHeader() {
       <div class="header-actions">
         <button onclick="openQrModal()" style="padding:6px 10px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-size:13px;cursor:pointer;min-height:32px" title="QR Code">&#128241;</button>
         ${proposalBadgeBtn}
-        ${T.phase !== 'setup' && isAdmin ? `<button id="save-now-btn" class="btn btn-ghost btn-sm" onclick="saveNow()" style="color:var(--secondary);font-size:12px;min-height:32px">Speichern</button>` : ''}
         ${isAdmin ? `<button class="btn btn-ghost btn-sm" onclick="openArchive()" style="font-size:12px;min-height:32px">Archiv</button>` : ''}
         ${adminHtml}
       </div>
