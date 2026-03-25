@@ -726,6 +726,7 @@ let _tournamentListener = null;
 let _proposalListener = null;
 let pendingProposals = {};
 let _lastProposalCount = 0;
+let _proposalsInitialized = false;
 
 function initFirebase() {
   try {
@@ -831,12 +832,19 @@ function updateProposalBadge() {
     badge.textContent = count;
     badge.style.display = count > 0 ? 'flex' : 'none';
   }
-  // Bell notification for admin when new proposal arrives
-  if (isAdmin && count > _lastProposalCount) {
+  const bellBtn = document.getElementById('proposal-bell-btn');
+  if (bellBtn) {
+    bellBtn.style.background = count > 0 ? 'rgba(235,101,255,0.15)' : 'rgba(148,170,255,0.06)';
+    bellBtn.style.borderColor = count > 0 ? 'rgba(235,101,255,0.4)' : 'var(--glass-border)';
+    bellBtn.style.color = count > 0 ? 'var(--secondary)' : 'var(--text3)';
+  }
+  // Bell notification for admin when new proposal arrives (skip first load)
+  if (isAdmin && _proposalsInitialized && count > _lastProposalCount) {
     playBell();
-    showToast(`🔔 Neues Ergebnis gemeldet! (${count})`);
+    showToast('🔔 Neues Ergebnis gemeldet!');
   }
   _lastProposalCount = count;
+  _proposalsInitialized = true;
   // Refresh proposals panel list if open
   const panelList = document.getElementById('proposals-panel-list');
   if (panelList) {
@@ -1563,10 +1571,10 @@ function renderHeader() {
        <button onclick="openAdminLogin()" class="btn btn-ghost btn-sm" style="color:var(--primary);font-size:12px;min-height:32px">Admin</button>`;
 
   const proposalCount = Object.keys(pendingProposals).length;
-  const proposalBadgeBtn = isAdmin && proposalCount > 0
-    ? `<button onclick="document.getElementById('proposals-panel-backdrop').classList.add('open')" style="position:relative;padding:6px 10px;background:rgba(235,101,255,0.12);border:1px solid rgba(235,101,255,0.3);border-radius:8px;color:var(--secondary);font-size:13px;cursor:pointer;min-height:32px">
-        &#128226;
-        <span id="proposal-badge" style="display:flex;position:absolute;top:-4px;right:-4px;background:var(--secondary);color:#fff;border-radius:99px;font-size:10px;width:18px;height:18px;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700">${proposalCount}</span>
+  const proposalBadgeBtn = isAdmin
+    ? `<button onclick="document.getElementById('proposals-panel-backdrop').classList.add('open')" id="proposal-bell-btn" style="position:relative;padding:6px 10px;background:${proposalCount > 0 ? 'rgba(235,101,255,0.15)' : 'rgba(148,170,255,0.06)'};border:1px solid ${proposalCount > 0 ? 'rgba(235,101,255,0.4)' : 'var(--glass-border)'};border-radius:8px;color:${proposalCount > 0 ? 'var(--secondary)' : 'var(--text3)'};cursor:pointer;min-height:32px;transition:all 0.2s">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span id="proposal-badge" style="display:${proposalCount > 0 ? 'flex' : 'none'};position:absolute;top:-5px;right:-5px;background:var(--secondary);color:#fff;border-radius:99px;font-size:10px;width:18px;height:18px;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;box-shadow:0 0 8px rgba(235,101,255,0.6)">${proposalCount}</span>
        </button>`
     : `<span id="proposal-badge" style="display:none"></span>`;
 
