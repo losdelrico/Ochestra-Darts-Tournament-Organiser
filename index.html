@@ -2629,7 +2629,8 @@ function adjustProposalScore(player, dir) {
   document.getElementById('proposal-score1').textContent = proposalLegs1;
   document.getElementById('proposal-score2').textContent = proposalLegs2;
   const hasWinner = checkWinner(proposalLegs1, proposalLegs2, m);
-  document.getElementById('proposal-submit-btn').disabled = !hasWinner;
+  const alreadyPending = Object.values(pendingProposals).some(p => p.matchId === proposalMatchId);
+  document.getElementById('proposal-submit-btn').disabled = !hasWinner || alreadyPending;
 }
 function submitProposalFromModal() {
   submitProposal(proposalMatchId, proposalLegs1, proposalLegs2);
