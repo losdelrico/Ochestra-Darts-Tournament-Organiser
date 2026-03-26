@@ -3244,7 +3244,7 @@ function renderCounter() {
     const isCurr = i === C.currentPlayer;
     const displayScore = isCurr ? (pl.score - thrownPts) : pl.score;
     const cls = 'counter-player-card' + (isCurr ? ' cpc-active' : '');
-    const sub = isCurr ? (C.currentThrows.length > 0 ? `${C.currentThrows.length}/3 Würfe` : '🎯 wirft') : '';
+    const sub = isCurr ? (C.currentThrows.length > 0 ? `${C.currentThrows.length}/3 Würfe` : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>wirft') : '';
     const scoreColor = displayScore <= 40 ? 'var(--secondary)' : 'var(--text)';
     return `<div class="${cls}">
       <div class="cpc-name">${esc(pl.name)}</div>
