@@ -567,7 +567,7 @@
     .counter-player-card.cpc-busted { background:rgba(255,72,108,0.08); border-color:rgba(255,72,108,0.45); box-shadow:0 0 20px rgba(255,72,108,0.15); }
     .counter-player-card.cpc-winner { background:rgba(235,101,255,0.1); border-color:rgba(235,101,255,0.65); box-shadow:0 0 32px rgba(235,101,255,0.35); }
     .cpc-name { font-family:'Space Grotesk',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cpc-score { font-family:'Bebas Neue',sans-serif; font-size:42px; line-height:1; color:var(--text); }
+    .cpc-score { font-family:'Bebas Neue',sans-serif; font-size:42px; line-height:1; color:var(--text); transition:color 0.2s, text-shadow 0.2s; }
     .cpc-score.cpc-low { color:var(--secondary); text-shadow:0 0 20px rgba(235,101,255,0.5); }
     .cpc-sub { font-size:11px; color:var(--text3); font-family:'DM Sans',sans-serif; margin-top:2px; min-height:16px; }
     .cthrow-slot { flex:1; background:rgba(4,10,22,0.7); border:1px solid rgba(148,170,255,0.14); border-radius:10px; padding:10px 6px; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--text3); transition:all 0.15s; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
@@ -1006,7 +1006,8 @@ function deleteSave(id) {
 function playerColor(playerId) {
   if (!T) return COLORS[0];
   const idx = T.players.findIndex(p => p.id === playerId);
-  return COLORS[idx % COLORS.length] || COLORS[0];
+  if (idx < 0) return COLORS[0];
+  return COLORS[idx % COLORS.length];
 }
 
 function playerName(playerId) {
@@ -2413,10 +2414,9 @@ function undoMatch(matchId) {
         dep.winner = null; dep.status = 'pending'; dep.legs1 = 0; dep.legs2 = 0;
       }
       if (dep.phase === 'knockout3rd' && (dep.fromMatch1 === matchId || dep.fromMatch2 === matchId)) {
-        if (dep.status === 'done') { dep.winner = null; dep.status = 'pending'; dep.legs1 = 0; dep.legs2 = 0; }
         if (dep.fromMatch1 === matchId) dep.p1 = null;
         if (dep.fromMatch2 === matchId) dep.p2 = null;
-        if (dep.status !== 'done') { dep.winner = null; dep.status = 'pending'; dep.legs1 = 0; dep.legs2 = 0; }
+        dep.winner = null; dep.status = 'pending'; dep.legs1 = 0; dep.legs2 = 0;
       }
     });
   }
@@ -2746,12 +2746,11 @@ function openProposalModal(matchId) {
   document.getElementById('proposal-match-title').textContent = m.isFinal ? 'Finale' : m.is3rd ? 'Platz 3' : m.phase === 'group' ? 'Gruppenspiel' : 'K.O.-Match';
   const alreadyPending = Object.values(pendingProposals).some(p => p.matchId === matchId);
   const submitBtn = document.getElementById('proposal-submit-btn');
-  submitBtn.disabled = alreadyPending || true;
   document.getElementById('proposal-needed-info').textContent = alreadyPending
     ? '⏳ Ergebnis bereits gemeldet — warte auf Admin-Bestätigung.'
     : `Best of ${matchLegs(m)} — wer zuerst ${needed} Leg${needed>1?'s':''} gewinnt`;
-  if (alreadyPending) { submitBtn.disabled = true; submitBtn.textContent = 'BEREITS GEMELDET'; }
-  else { submitBtn.disabled = true; submitBtn.textContent = 'MELDEN'; }
+  submitBtn.disabled = true;
+  submitBtn.textContent = alreadyPending ? 'BEREITS GEMELDET' : 'MELDEN';
   document.getElementById('proposal-modal-backdrop').classList.add('open');
 }
 function closeProposalModal() {
@@ -2762,10 +2761,10 @@ function adjustProposalScore(player, dir) {
   if (!m) return;
   const needed = neededLegs(m);
   if (player === 'p1') {
-    if (dir === 'inc' && proposalLegs1 < needed) proposalLegs1++;
+    if (dir === 'inc' && proposalLegs1 < needed && proposalLegs2 < needed) proposalLegs1++;
     if (dir === 'dec' && proposalLegs1 > 0) proposalLegs1--;
   } else {
-    if (dir === 'inc' && proposalLegs2 < needed) proposalLegs2++;
+    if (dir === 'inc' && proposalLegs2 < needed && proposalLegs1 < needed) proposalLegs2++;
     if (dir === 'dec' && proposalLegs2 > 0) proposalLegs2--;
   }
   document.getElementById('proposal-score1').textContent = proposalLegs1;
@@ -3318,10 +3317,9 @@ function renderCounter() {
     const displayScore = isCurr ? (pl.score - thrownPts) : pl.score;
     const cls = 'counter-player-card' + (isCurr ? ' cpc-active' : '');
     const sub = isCurr ? (C.currentThrows.length > 0 ? `${C.currentThrows.length}/3 Würfe` : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>wirft') : '';
-    const scoreColor = displayScore <= 40 ? 'var(--secondary)' : 'var(--text)';
     return `<div class="${cls}">
       <div class="cpc-name">${esc(pl.name)}</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;line-height:1;color:${scoreColor};transition:color 0.2s">${displayScore}</div>
+      <div class="cpc-score${displayScore <= 40 ? ' cpc-low' : ''}">${displayScore}</div>
       <div class="cpc-sub">${sub}</div>
     </div>`;
   }).join('');
