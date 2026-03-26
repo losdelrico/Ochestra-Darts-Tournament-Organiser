@@ -755,7 +755,7 @@ let C = {
   setup: true, startScore: 501,
   players: [{name:'Spieler 1', score:501, history:[]}, {name:'Spieler 2', score:501, history:[]}],
   currentPlayer: 0, currentThrows: [],
-  lastTurn: null, gameOver: false, winner: -1, confirmExit: false
+  lastTurn: null, gameOver: false, winner: -1, confirmAction: null
 };
 
 const DEFAULT_STATE = () => ({
@@ -2919,7 +2919,7 @@ function counterStartGame() {
   C.lastTurn = null;
   C.gameOver = false;
   C.winner = -1;
-  C.confirmExit = false;
+  C.confirmAction = null;
   C.setup = false;
   render();
 }
@@ -2932,7 +2932,7 @@ function counterNewGame() {
   C.lastTurn = null;
   C.gameOver = false;
   C.winner = -1;
-  C.confirmExit = false;
+  C.confirmAction = null;
   render();
 }
 
@@ -3014,9 +3014,14 @@ function counterUndoTurn() {
 
 function counterBack() {
   const inProgress = !C.setup && !C.gameOver && C.players.some(p => p.score < C.startScore);
-  if (inProgress) { C.confirmExit = true; render(); return; }
-  C.confirmExit = false;
+  if (inProgress) { C.confirmAction = 'exit'; render(); return; }
+  C.confirmAction = null;
   closeCounter();
+}
+function counterConfirmNew() {
+  const inProgress = !C.setup && !C.gameOver && C.players.some(p => p.score < C.startScore);
+  if (inProgress) { C.confirmAction = 'new'; render(); return; }
+  counterNewGame();
 }
 
 function calcStats(playerIdx) {
@@ -3041,6 +3046,47 @@ function calcStats(playerIdx) {
   return { avg, dblPct, dblHits, dblAttempts, highFinish, turns100, totalDarts };
 }
 
+const _CO = {
+  2:'D1',3:'1 D1',4:'D2',5:'1 D2',6:'D3',7:'3 D2',8:'D4',9:'1 D4',10:'D5',
+  11:'3 D4',12:'D6',13:'5 D4',14:'D7',15:'7 D4',16:'D8',17:'9 D4',18:'D9',
+  19:'3 D8',20:'D10',21:'5 D8',22:'D11',23:'7 D8',24:'D12',25:'9 D8',
+  26:'D13',27:'11 D8',28:'D14',29:'9 D10',30:'D15',31:'7 D12',32:'D16',
+  33:'1 D16',34:'D17',35:'3 D16',36:'D18',37:'5 D16',38:'D19',39:'7 D16',
+  40:'D20',41:'9 D16',42:'10 D16',43:'3 D20',44:'4 D20',45:'5 D20',
+  46:'6 D20',47:'7 D20',48:'8 D20',49:'9 D20',50:'D25',51:'11 D20',
+  52:'12 D20',53:'13 D20',54:'14 D20',55:'15 D20',56:'16 D20',57:'17 D20',
+  58:'18 D20',59:'19 D20',60:'20 D20',61:'D25 D18',62:'T10 D16',
+  63:'T13 D12',64:'T16 D8',65:'T19 D4',66:'T10 D18',67:'T17 D8',
+  68:'T20 D4',69:'T19 D6',70:'T18 D8',71:'T13 D16',72:'T16 D12',
+  73:'T19 D8',74:'T14 D16',75:'T17 D12',76:'T20 D8',77:'T19 D10',
+  78:'T18 D12',79:'T13 D20',80:'T20 D10',81:'T19 D12',82:'T14 D20',
+  83:'T17 D16',84:'T20 D12',85:'T15 D20',86:'T18 D16',87:'T17 D18',
+  88:'T20 D14',89:'T19 D16',90:'T20 D15',91:'T17 D20',92:'T20 D16',
+  93:'T19 D18',94:'T18 D20',95:'T19 D19',96:'T20 D18',97:'T19 D20',
+  98:'T20 D19',99:'T19 10 D16',100:'T20 D20',
+  101:'T17 T10 D10',102:'T20 10 D16',103:'T19 10 D18',104:'T18 T10 D10',
+  105:'T20 13 D16',106:'T20 14 D16',107:'T19 T10 D10',108:'T20 16 D16',
+  109:'T20 17 D16',110:'T20 18 D16',111:'T19 T12 D10',112:'T20 T12 D8',
+  113:'T19 16 D20',114:'T20 T14 D8',115:'T20 15 D20',116:'T20 T16 D4',
+  117:'T20 17 D20',118:'T20 18 D20',119:'T19 T12 D13',120:'T20 20 D20',
+  121:'T17 T18 D13',122:'T18 T18 D7',123:'T19 T16 D9',124:'T20 T16 D8',
+  125:'T20 T15 D10',126:'T19 T19 D6',127:'T20 T17 D8',128:'T18 T18 D10',
+  129:'T19 T16 D12',130:'T20 T18 D8',131:'T20 T17 D10',132:'T20 T16 D12',
+  133:'T20 T19 D8',134:'T20 T14 D16',135:'T20 T17 D12',136:'T20 T20 D8',
+  137:'T20 T19 D10',138:'T20 T18 D12',139:'T19 T14 D20',140:'T20 T20 D10',
+  141:'T20 T19 D12',142:'T20 T18 D16',143:'T20 T17 D16',144:'T20 T20 D12',
+  145:'T20 T19 D14',146:'T20 T18 D16',147:'T20 T17 D18',148:'T20 T20 D14',
+  149:'T20 T19 D16',150:'T20 T18 D18',151:'T20 T17 D20',152:'T20 T20 D16',
+  153:'T20 T19 D18',154:'T20 T18 D20',155:'T20 T19 D19',156:'T20 T20 D18',
+  157:'T19 T20 D20',158:'T20 T20 D19',160:'T20 T20 D20',
+  167:'T20 T19 D25',170:'T20 T20 D25'
+};
+function getCheckout(score) {
+  if (score < 2 || score > 170) return null;
+  const s = _CO[score];
+  return s ? s.split(' ') : null;
+}
+
 function buildDartboard() {
   const NUMS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
   const CX = 170, CY = 170;
@@ -3053,7 +3099,7 @@ function buildDartboard() {
     return `M${f(CX+r1*Math.cos(a1))},${f(CY+r1*Math.sin(a1))} A${r1},${r1},0,0,1,${f(CX+r1*Math.cos(a2))},${f(CY+r1*Math.sin(a2))} L${f(CX+r2*Math.cos(a2))},${f(CY+r2*Math.sin(a2))} A${r2},${r2},0,0,0,${f(CX+r2*Math.cos(a1))},${f(CY+r2*Math.sin(a1))} Z`;
   }
 
-  let s = `<svg viewBox="-8 -8 356 356" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:360px;display:block;margin:0 auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent">`;
+  let s = `<svg viewBox="-8 -8 356 356" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;touch-action:manipulation;-webkit-tap-highlight-color:transparent">`;
   s += `<circle cx="170" cy="170" r="170" fill="#0d0905"/>`;
   s += `<circle cx="170" cy="170" r="165" fill="#0d0905"/>`;
 
@@ -3115,16 +3161,17 @@ function renderCounter() {
     </div>`;
   }
 
-  // ---- CONFIRM EXIT OVERLAY ----
-  if (C.confirmExit) {
+  // ---- CONFIRM OVERLAY ----
+  if (C.confirmAction) {
+    const isNew = C.confirmAction === 'new';
     return `
     <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
       <div style="font-size:48px;margin-bottom:16px">🎯</div>
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px">Spiel abbrechen?</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px">${isNew?'Neues Spiel starten?':'Spiel abbrechen?'}</div>
       <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text3);margin-bottom:32px;line-height:1.6">Das laufende Spiel geht verloren.</div>
       <div style="display:flex;gap:12px;width:100%;max-width:300px">
-        <button onclick="C.confirmExit=false;render()" style="flex:1;padding:14px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;min-height:50px">Weiterspielen</button>
-        <button onclick="C.confirmExit=false;closeCounter()" style="flex:1;padding:14px;background:rgba(255,110,132,0.15);border:1px solid rgba(255,110,132,0.4);border-radius:12px;color:var(--red);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;min-height:50px">Verlassen</button>
+        <button onclick="C.confirmAction=null;render()" style="flex:1;padding:14px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;min-height:50px">Weiterspielen</button>
+        <button onclick="C.confirmAction=null;${isNew?'counterNewGame()':'closeCounter()'}" style="flex:1;padding:14px;background:rgba(255,110,132,0.15);border:1px solid rgba(255,110,132,0.4);border-radius:12px;color:var(--red);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;min-height:50px">${isNew?'Neu starten':'Verlassen'}</button>
       </div>
     </div>`;
   }
@@ -3190,36 +3237,42 @@ function renderCounter() {
   const p = C.players[C.currentPlayer];
   const thrownPts = C.currentThrows.reduce((s,t) => s+t.pts, 0);
   const remaining = p.score - thrownPts;
+  const co = getCheckout(remaining);
 
-  // Player score cards
+  // Player score cards — live score for current player
   const playerCards = C.players.map((pl, i) => {
-    let cls = 'counter-player-card';
-    let sub = '';
-    if (i === C.currentPlayer) {
-      cls += ' cpc-active';
-      sub = C.currentThrows.length > 0 ? `${C.currentThrows.length}/3 Würfe` : 'am Zug';
-    }
-    const scoreClass = 'cpc-score' + (pl.score <= 40 ? ' cpc-low' : '');
+    const isCurr = i === C.currentPlayer;
+    const displayScore = isCurr ? (pl.score - thrownPts) : pl.score;
+    const cls = 'counter-player-card' + (isCurr ? ' cpc-active' : '');
+    const sub = isCurr ? (C.currentThrows.length > 0 ? `${C.currentThrows.length}/3 Würfe` : 'am Zug') : '';
+    const scoreColor = displayScore <= 40 ? 'var(--secondary)' : 'var(--text)';
     return `<div class="${cls}">
       <div class="cpc-name">${esc(pl.name)}</div>
-      <div class="${scoreClass}">${pl.score}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;line-height:1;color:${scoreColor};transition:color 0.2s">${displayScore}</div>
       <div class="cpc-sub">${sub}</div>
     </div>`;
   }).join('');
 
-  // Throw slots
+  // Throw slots with checkout hints in empty slots
   const throwSlots = [0,1,2].map(i => {
     const t = C.currentThrows[i];
-    if (!t) return `<div class="cthrow-slot"><div>—</div><div class="cthrow-label">Wurf ${i+1}</div></div>`;
-    const cls = 'cthrow-slot filled' + (t.bust ? ' c-bust' : '');
-    return `<div class="${cls}"><div>${t.label}</div><div class="cthrow-label">${t.pts > 0 ? '+'+t.pts : '0'}</div></div>`;
+    if (t) {
+      const cls = 'cthrow-slot filled' + (t.bust ? ' c-bust' : '');
+      return `<div class="${cls}"><div>${t.label}</div><div class="cthrow-label">${t.pts > 0 ? '+'+t.pts : '0'}</div></div>`;
+    }
+    // Show checkout hint for this slot
+    const hintScore = p.score - C.currentThrows.slice(0,i).reduce((s,x)=>s+x.pts,0);
+    const hint = getCheckout(hintScore);
+    const hintDart = hint ? hint[i - C.currentThrows.length] : null;
+    if (hintDart) return `<div class="cthrow-slot" style="border-color:rgba(235,101,255,0.2);background:rgba(235,101,255,0.04)"><div style="color:rgba(235,101,255,0.5);font-size:16px">${hintDart}</div><div class="cthrow-label" style="color:rgba(235,101,255,0.4)">Empf.</div></div>`;
+    return `<div class="cthrow-slot"><div>—</div><div class="cthrow-label">Wurf ${i+1}</div></div>`;
   }).join('');
 
-  const turnTotal = C.currentThrows.reduce((s,t)=>s+t.pts,0);
+  const turnTotal = thrownPts;
 
   // Last turn feedback bar
   const lastTurnBar = C.lastTurn ? `
-    <div style="background:${C.lastTurn.wasBust?'rgba(255,110,132,0.1)':'rgba(129,236,255,0.07)'};border:1px solid ${C.lastTurn.wasBust?'rgba(255,110,132,0.3)':'rgba(129,236,255,0.2)'};border-radius:10px;padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+    <div style="background:${C.lastTurn.wasBust?'rgba(255,110,132,0.1)':'rgba(129,236,255,0.07)'};border:1px solid ${C.lastTurn.wasBust?'rgba(255,110,132,0.3)':'rgba(129,236,255,0.2)'};border-radius:10px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px">
       <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:${C.lastTurn.wasBust?'var(--red)':'var(--tertiary)'};min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
         ${C.lastTurn.wasBust?'BUST':'✓'} <strong>${esc(C.lastTurn.name)}</strong>: ${C.lastTurn.throws.map(t=>t.label).join(' · ')}
       </span>
@@ -3235,7 +3288,7 @@ function renderCounter() {
           <span style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase">${C.startScore} · Double Out</span>
         </div>
         <div style="display:flex;gap:6px">
-          <button onclick="counterNewGame()" style="padding:8px 12px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:8px;color:var(--text3);cursor:pointer;font-size:12px;font-family:'Space Grotesk',sans-serif;font-weight:600;min-height:36px">Neu</button>
+          <button onclick="counterConfirmNew()" style="padding:8px 12px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:8px;color:var(--text3);cursor:pointer;font-size:12px;font-family:'Space Grotesk',sans-serif;font-weight:600;min-height:36px">Neu</button>
           <button onclick="counterBack()" style="padding:8px 12px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:8px;color:var(--text2);cursor:pointer;font-size:12px;font-family:'Space Grotesk',sans-serif;font-weight:600;min-height:36px">← Zurück</button>
         </div>
       </div>
@@ -3243,23 +3296,22 @@ function renderCounter() {
       <!-- Player scores -->
       <div style="display:flex;gap:8px;margin-bottom:10px">${playerCards}</div>
 
-      <!-- Last turn feedback -->
-      ${lastTurnBar}
-
       <!-- Throw slots -->
-      <div style="display:flex;gap:6px;margin-bottom:6px">${throwSlots}</div>
-
-      <div style="text-align:center;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text3);margin-bottom:8px">
-        ${turnTotal > 0 ? `Turn: <strong style="color:var(--text2)">${turnTotal}</strong> &nbsp;·&nbsp; Verbleibend: <strong style="color:${remaining<=40?'var(--secondary)':'var(--text)'}">${remaining}</strong>` : `<strong style="color:var(--text2)">${esc(p.name)}</strong> ist dran`}
+      <div style="display:flex;gap:6px;margin-bottom:4px">${throwSlots}</div>
+      <div style="text-align:center;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text3);margin-bottom:6px;min-height:16px">
+        ${turnTotal > 0 ? `Turn: <strong style="color:var(--text2)">${turnTotal}</strong> &nbsp;·&nbsp; Verbleibend: <strong style="color:${remaining<=40?'var(--secondary)':'var(--text)'}">${remaining}</strong>${co?' &nbsp;·&nbsp; <span style="color:rgba(235,101,255,0.7)">Finish: '+co.join(' ')+'</span>':''}` : (co ? `<span style="color:rgba(235,101,255,0.6)">Checkout: ${co.join(' → ')}</span>` : `<strong style="color:var(--text2)">${esc(p.name)}</strong> ist dran`)}
       </div>
 
-      <!-- Dartboard -->
-      <div style="padding:0 4px;margin-bottom:10px">
+      <!-- Dartboard — full width, responsive -->
+      <div style="margin:0 -16px;margin-bottom:0">
         ${buildDartboard()}
       </div>
 
+      <!-- Last turn feedback — below board -->
+      ${lastTurnBar}
+
       <!-- Action buttons -->
-      <div style="padding:0 4px">
+      <div style="margin-top:10px">
         <div style="display:flex;gap:8px">
           <button onclick="counterMiss()" style="flex:1;padding:12px 10px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text3);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:50px">Miss</button>
           <button onclick="counterUndo()" ${C.currentThrows.length===0?'disabled':''} style="flex:1;padding:12px 10px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text3);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:50px">↩ Undo</button>
