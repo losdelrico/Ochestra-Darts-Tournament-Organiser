@@ -3106,8 +3106,8 @@ function buildDartboard() {
   NUMS.forEach((num, i) => {
     const a1 = -99 + i*18, a2 = a1 + 18;
     const ev = i % 2 === 0;
-    const cs = ev ? '#1c1c1c' : '#e8d8a8';
-    const ca = ev ? '#c0392b' : '#27ae60';
+    const cs = ev ? '#0b1424' : '#162035';
+    const ca = ev ? '#b044d4' : '#3fb8cc';
     s += `<path class="ds-seg" d="${seg(R_BULL,R_IS,a1,a2)}" fill="${cs}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},1)"/>`;
     s += `<path class="ds-seg" d="${seg(R_IS,R_TRI,a1,a2)}" fill="${ca}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},3)"/>`;
     s += `<path class="ds-seg" d="${seg(R_TRI,R_OS,a1,a2)}" fill="${cs}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},1)"/>`;
@@ -3115,8 +3115,8 @@ function buildDartboard() {
   });
 
   // Bull
-  s += `<circle cx="170" cy="170" r="${R_BULL}" fill="#27ae60" stroke="#222" stroke-width="0.8" onclick="counterHit(25,1)" style="cursor:pointer"/>`;
-  s += `<circle cx="170" cy="170" r="${R_DBULL}" fill="#c0392b" stroke="#222" stroke-width="0.8" onclick="counterHit(25,2)" style="cursor:pointer"/>`;
+  s += `<circle cx="170" cy="170" r="${R_BULL}" fill="#3fb8cc" stroke="#0d1628" stroke-width="0.8" onclick="counterHit(25,1)" style="cursor:pointer"/>`;
+  s += `<circle cx="170" cy="170" r="${R_DBULL}" fill="#b044d4" stroke="#0d1628" stroke-width="0.8" onclick="counterHit(25,2)" style="cursor:pointer"/>`;
   s += `<text x="170" y="170" text-anchor="middle" dominant-baseline="central" fill="white" font-size="9" font-family="Space Grotesk,sans-serif" font-weight="700" pointer-events="none">50</text>`;
   s += `<text x="170" y="${CY-(R_DBULL+R_BULL)/2}" text-anchor="middle" dominant-baseline="central" fill="white" font-size="8" font-family="Space Grotesk,sans-serif" pointer-events="none">25</text>`;
 
