@@ -2872,6 +2872,13 @@ function closeQrScanner() {
   document.getElementById('qr-scanner-overlay').style.display = 'none';
 }
 
+window.addEventListener('beforeunload', e => {
+  if (showCounter && !C.setup && !C.gameOver) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 // ===================== DART COUNTER =====================
 function openCounter() { showCounter = true; render(); }
 function closeCounter() { showCounter = false; render(); }
@@ -3013,13 +3020,13 @@ function counterUndoTurn() {
 }
 
 function counterBack() {
-  const inProgress = !C.setup && !C.gameOver && C.players.some(p => p.score < C.startScore);
+  const inProgress = !C.setup && !C.gameOver;
   if (inProgress) { C.confirmAction = 'exit'; render(); return; }
   C.confirmAction = null;
   closeCounter();
 }
 function counterConfirmNew() {
-  const inProgress = !C.setup && !C.gameOver && C.players.some(p => p.score < C.startScore);
+  const inProgress = !C.setup && !C.gameOver;
   if (inProgress) { C.confirmAction = 'new'; render(); return; }
   counterNewGame();
 }
