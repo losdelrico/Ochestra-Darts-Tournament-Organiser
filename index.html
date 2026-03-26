@@ -1348,7 +1348,7 @@ function render() {
           <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text3);max-width:280px;line-height:1.6;margin-bottom:32px">Scanne den QR-Code des aktiven Turniers.</div>
           <button onclick="openQrScanner()" style="padding:16px 32px;background:linear-gradient(135deg,var(--primary),var(--secondary));border:none;border-radius:14px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:0.08em;cursor:pointer;box-shadow:0 4px 24px rgba(148,170,255,0.3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>QR-Code scannen</button>
           <button onclick="openAdminLogin()" style="margin-top:24px;background:none;border:none;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px">Als Admin einloggen</button>
-          <button onclick="openCounter()" style="margin-top:12px;background:none;border:1px solid rgba(148,170,255,0.2);color:var(--primary);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;padding:12px 24px;border-radius:12px;display:flex;align-items:center;gap:8px">🎯 Darts Counter</button>
+          <button onclick="openCounter()" style="margin-top:12px;background:none;border:1px solid rgba(148,170,255,0.2);color:var(--primary);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;padding:12px 24px;border-radius:12px;display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="15" fill="rgba(148,170,255,0.1)" stroke="rgba(148,170,255,0.55)" stroke-width="1.5"/><circle cx="16" cy="16" r="10" fill="rgba(255,110,132,0.1)" stroke="rgba(255,110,132,0.55)" stroke-width="1.5"/><circle cx="16" cy="16" r="5" fill="rgba(235,101,255,0.85)" stroke="rgba(235,101,255,0.5)" stroke-width="1"/></svg> Darts Counter</button>
         </div>`;
       return;
     }
@@ -1523,7 +1523,7 @@ function renderLanding() {
         ` : `<div style="text-align:center;padding:32px;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:14px">Noch keine Turniere vorhanden.</div>`}
 
         <button onclick="showLandingPin('__new__')" style="width:100%;margin-top:6px;padding:14px;background:transparent;border:1px dashed rgba(148,170,255,0.25);border-radius:var(--radius);color:var(--text3);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.06em;transition:all 0.15s" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='rgba(148,170,255,0.25)';this.style.color='var(--text3)'">＋ Neues Turnier erstellen</button>
-        <button onclick="openCounter()" style="width:100%;margin-top:6px;padding:14px;background:none;border:1px solid rgba(148,170,255,0.2);border-radius:var(--radius);color:var(--primary);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s">🎯 Darts Counter</button>
+        <button onclick="openCounter()" style="width:100%;margin-top:6px;padding:14px;background:none;border:1px solid rgba(148,170,255,0.2);border-radius:var(--radius);color:var(--primary);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s"><svg width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="15" fill="rgba(148,170,255,0.1)" stroke="rgba(148,170,255,0.55)" stroke-width="1.5"/><circle cx="16" cy="16" r="10" fill="rgba(255,110,132,0.1)" stroke="rgba(255,110,132,0.55)" stroke-width="1.5"/><circle cx="16" cy="16" r="5" fill="rgba(235,101,255,0.85)" stroke="rgba(235,101,255,0.5)" stroke-width="1"/></svg> Darts Counter</button>
       </div>
 
       <!-- PIN Panel -->
@@ -3106,30 +3106,49 @@ function buildDartboard() {
     return `M${f(CX+r1*Math.cos(a1))},${f(CY+r1*Math.sin(a1))} A${r1},${r1},0,0,1,${f(CX+r1*Math.cos(a2))},${f(CY+r1*Math.sin(a2))} L${f(CX+r2*Math.cos(a2))},${f(CY+r2*Math.sin(a2))} A${r2},${r2},0,0,0,${f(CX+r2*Math.cos(a1))},${f(CY+r2*Math.sin(a1))} Z`;
   }
 
-  let s = `<svg viewBox="-8 -8 356 356" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;touch-action:manipulation;-webkit-tap-highlight-color:transparent">`;
-  s += `<circle cx="170" cy="170" r="170" fill="#0d0905"/>`;
-  s += `<circle cx="170" cy="170" r="165" fill="#0d0905"/>`;
+  // Glass palette
+  const SEG_D  = '#080f1e';                    // dark segment (near-black)
+  const SEG_L  = '#bdc8ec';                    // light segment (white-ish)
+  const C_RED  = 'rgba(255,110,132,0.88)';     // --red from palette
+  const C_GRN  = 'rgba(129,236,255,0.82)';     // --tertiary (green/teal) from palette
+  const WIRE   = 'rgba(148,170,255,0.28)';     // glass wire
+
+  let s = `<svg viewBox="-8 -8 356 356" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
+  <defs>
+    <radialGradient id="dg-sheen" cx="38%" cy="28%" r="70%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.13)"/>
+      <stop offset="55%" stop-color="rgba(255,255,255,0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,16,0.22)"/>
+    </radialGradient>
+  </defs>`;
+  s += `<circle cx="170" cy="170" r="170" fill="#050b18"/>`;
+  s += `<circle cx="170" cy="170" r="165" fill="#060d1c"/>`;
 
   NUMS.forEach((num, i) => {
     const a1 = -99 + i*18, a2 = a1 + 18;
-    const ev = i % 2 === 0;
-    const cs = ev ? '#0b1424' : '#162035';
-    const ca = ev ? '#b044d4' : '#3fb8cc';
-    s += `<path class="ds-seg" d="${seg(R_BULL,R_IS,a1,a2)}" fill="${cs}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},1)"/>`;
-    s += `<path class="ds-seg" d="${seg(R_IS,R_TRI,a1,a2)}" fill="${ca}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},3)"/>`;
-    s += `<path class="ds-seg" d="${seg(R_TRI,R_OS,a1,a2)}" fill="${cs}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},1)"/>`;
-    s += `<path class="ds-seg" d="${seg(R_OS,R_DBL,a1,a2)}" fill="${ca}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},2)"/>`;
+    const isEven = i % 2 === 0;
+    const segBase = isEven ? SEG_D : SEG_L;
+    const ringTri = isEven ? C_GRN : C_RED;
+    const ringDbl = isEven ? C_RED : C_GRN;
+    s += `<path class="ds-seg" d="${seg(R_BULL,R_IS,a1,a2)}" fill="${segBase}" stroke="${WIRE}" stroke-width="0.5" onclick="counterHit(${num},1)"/>`;
+    s += `<path class="ds-seg" d="${seg(R_IS,R_TRI,a1,a2)}" fill="${ringTri}" stroke="${WIRE}" stroke-width="0.5" onclick="counterHit(${num},3)"/>`;
+    s += `<path class="ds-seg" d="${seg(R_TRI,R_OS,a1,a2)}" fill="${segBase}" stroke="${WIRE}" stroke-width="0.5" onclick="counterHit(${num},1)"/>`;
+    s += `<path class="ds-seg" d="${seg(R_OS,R_DBL,a1,a2)}" fill="${ringDbl}" stroke="${WIRE}" stroke-width="0.5" onclick="counterHit(${num},2)"/>`;
   });
 
   // Bull
-  s += `<circle cx="170" cy="170" r="${R_BULL}" fill="#3fb8cc" stroke="#0d1628" stroke-width="0.8" onclick="counterHit(25,1)" style="cursor:pointer"/>`;
-  s += `<circle cx="170" cy="170" r="${R_DBULL}" fill="#b044d4" stroke="#0d1628" stroke-width="0.8" onclick="counterHit(25,2)" style="cursor:pointer"/>`;
+  s += `<circle cx="170" cy="170" r="${R_BULL}" fill="${C_GRN}" stroke="rgba(129,236,255,0.5)" stroke-width="1" onclick="counterHit(25,1)" style="cursor:pointer"/>`;
+  s += `<circle cx="170" cy="170" r="${R_DBULL}" fill="${C_RED}" stroke="rgba(255,110,132,0.5)" stroke-width="1" onclick="counterHit(25,2)" style="cursor:pointer"/>`;
+
+  // Glass sheen overlay
+  s += `<circle cx="170" cy="170" r="165" fill="url(#dg-sheen)" pointer-events="none"/>`;
+
   s += `<text x="170" y="170" text-anchor="middle" dominant-baseline="central" fill="white" font-size="9" font-family="Space Grotesk,sans-serif" font-weight="700" pointer-events="none">50</text>`;
   s += `<text x="170" y="${CY-(R_DBULL+R_BULL)/2}" text-anchor="middle" dominant-baseline="central" fill="white" font-size="8" font-family="Space Grotesk,sans-serif" pointer-events="none">25</text>`;
 
   // Ring wire separators
   [R_BULL, R_IS, R_TRI, R_OS, R_DBL].forEach(r => {
-    s += `<circle cx="170" cy="170" r="${r}" fill="none" stroke="#2a2a2a" stroke-width="1.2"/>`;
+    s += `<circle cx="170" cy="170" r="${r}" fill="none" stroke="${WIRE}" stroke-width="1.2"/>`;
   });
 
   // Number labels just outside double ring
@@ -3138,7 +3157,7 @@ function buildDartboard() {
     const r = 169;
     const lx = CX + r * Math.cos(toRad(angle));
     const ly = CY + r * Math.sin(toRad(angle));
-    s += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="central" fill="#e0e0e0" font-size="10" font-family="Space Grotesk,sans-serif" font-weight="700" pointer-events="none">${num}</text>`;
+    s += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="central" fill="#e8ecff" font-size="10" font-family="Space Grotesk,sans-serif" font-weight="700" pointer-events="none">${num}</text>`;
   });
 
   s += `</svg>`;
@@ -3173,7 +3192,7 @@ function renderCounter() {
     const isNew = C.confirmAction === 'new';
     return `
     <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
-      <div style="font-size:48px;margin-bottom:16px">🎯</div>
+      <div style="margin-bottom:16px"><svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="31" fill="rgba(148,170,255,0.07)" stroke="rgba(148,170,255,0.28)" stroke-width="1.5"/><circle cx="32" cy="32" r="23" fill="rgba(255,110,132,0.1)" stroke="rgba(255,110,132,0.42)" stroke-width="1.5"/><circle cx="32" cy="32" r="15" fill="rgba(129,236,255,0.12)" stroke="rgba(129,236,255,0.48)" stroke-width="1.5"/><circle cx="32" cy="32" r="7" fill="rgba(235,101,255,0.9)" stroke="rgba(235,101,255,0.6)" stroke-width="1"/></svg></div>
       <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px">${isNew?'Neues Spiel starten?':'Spiel abbrechen?'}</div>
       <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text3);margin-bottom:32px;line-height:1.6">Das laufende Spiel geht verloren.</div>
       <div style="display:flex;gap:12px;width:100%;max-width:300px">
