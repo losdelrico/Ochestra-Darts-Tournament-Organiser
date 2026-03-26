@@ -558,6 +558,22 @@
       .podium-name { max-width: 80px; font-size: 13px; }
       .app-header { margin: 0 -12px 16px; }
     }
+
+    /* --- DART COUNTER --- */
+    .ds-seg { cursor:pointer; }
+    .ds-seg:active { opacity:0.6; }
+    .counter-player-card { flex:1; background:var(--glass-1); border:1px solid var(--glass-border); border-radius:14px; padding:14px 12px; text-align:center; transition:all 0.2s; min-width:0; }
+    .counter-player-card.cpc-active { background:rgba(148,170,255,0.1); border-color:rgba(148,170,255,0.4); box-shadow:0 0 24px rgba(148,170,255,0.15); }
+    .counter-player-card.cpc-busted { background:rgba(255,110,132,0.08); border-color:rgba(255,110,132,0.4); }
+    .counter-player-card.cpc-winner { background:rgba(235,101,255,0.15); border-color:rgba(235,101,255,0.6); box-shadow:0 0 28px rgba(235,101,255,0.3); }
+    .cpc-name { font-family:'Space Grotesk',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cpc-score { font-family:'Bebas Neue',sans-serif; font-size:42px; line-height:1; color:var(--text); }
+    .cpc-score.cpc-low { color:var(--secondary); }
+    .cpc-sub { font-size:11px; color:var(--text3); font-family:'DM Sans',sans-serif; margin-top:2px; min-height:16px; }
+    .cthrow-slot { flex:1; background:var(--glass-1); border:1px solid var(--glass-border); border-radius:10px; padding:10px 6px; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--text3); transition:all 0.15s; }
+    .cthrow-slot.filled { color:var(--text); border-color:rgba(148,170,255,0.3); background:rgba(148,170,255,0.07); }
+    .cthrow-slot.c-bust { color:var(--red); border-color:rgba(255,110,132,0.5); background:rgba(255,110,132,0.1); }
+    .cthrow-label { font-size:9px; color:var(--text3); font-family:'Space Grotesk',sans-serif; text-transform:uppercase; letter-spacing:0.08em; margin-top:2px; }
   </style>
 </head>
 <body>
@@ -734,6 +750,13 @@ let confirmCb = null;
 let confettiAnim = null;
 let groupTab = 'spielplan'; // 'spielplan' | 'resultate' | 'tabelle'
 let appPhase = 'landing';   // 'landing' | 'tournament'
+let showCounter = false;
+let C = {
+  setup: true, startScore: 501,
+  players: [{name:'Spieler 1', score:501, history:[]}, {name:'Spieler 2', score:501, history:[]}],
+  currentPlayer: 0, currentThrows: [],
+  busted: false, turnComplete: false, gameOver: false, winner: -1
+};
 
 const DEFAULT_STATE = () => ({
   id: uid(),
@@ -823,7 +846,7 @@ function listenToTournament(tid) {
   _tournamentListener = () => stateRef.off();
   stateRef.on('value', (snapshot) => {
     if (isAdmin) return; // admin owns the state
-    if (appPhase !== 'tournament') return; // don't overwrite landing/QR screen
+    if (appPhase !== 'tournament' || showCounter) return; // don't overwrite landing/QR screen or counter
     const data = snapshot.val();
     if (data) {
       T = data;
@@ -1303,6 +1326,13 @@ function checkWinner(legs1, legs2, match) {
 // ===================== RENDER =====================
 function render() {
   const app = document.getElementById('app');
+
+  if (showCounter) {
+    document.querySelectorAll('.ambient-blob').forEach(b => b.style.opacity = '');
+    app.innerHTML = renderCounter();
+    return;
+  }
+
   if (!T) { app.innerHTML = ''; return; }
 
   const blobs = document.querySelectorAll('.ambient-blob');
@@ -1318,6 +1348,7 @@ function render() {
           <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text3);max-width:280px;line-height:1.6;margin-bottom:32px">Scanne den QR-Code des aktiven Turniers.</div>
           <button onclick="openQrScanner()" style="padding:16px 32px;background:linear-gradient(135deg,var(--primary),var(--secondary));border:none;border-radius:14px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:0.08em;cursor:pointer;box-shadow:0 4px 24px rgba(148,170,255,0.3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>QR-Code scannen</button>
           <button onclick="openAdminLogin()" style="margin-top:24px;background:none;border:none;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px">Als Admin einloggen</button>
+          <button onclick="openCounter()" style="margin-top:12px;background:none;border:1px solid rgba(148,170,255,0.2);color:var(--primary);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;padding:12px 24px;border-radius:12px;display:flex;align-items:center;gap:8px">🎯 Darts Counter</button>
         </div>`;
       return;
     }
@@ -1492,6 +1523,7 @@ function renderLanding() {
         ` : `<div style="text-align:center;padding:32px;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:14px">Noch keine Turniere vorhanden.</div>`}
 
         <button onclick="showLandingPin('__new__')" style="width:100%;margin-top:6px;padding:14px;background:transparent;border:1px dashed rgba(148,170,255,0.25);border-radius:var(--radius);color:var(--text3);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.06em;transition:all 0.15s" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='rgba(148,170,255,0.25)';this.style.color='var(--text3)'">＋ Neues Turnier erstellen</button>
+        <button onclick="openCounter()" style="width:100%;margin-top:6px;padding:14px;background:none;border:1px solid rgba(148,170,255,0.2);border-radius:var(--radius);color:var(--primary);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s">🎯 Darts Counter</button>
       </div>
 
       <!-- PIN Panel -->
@@ -1541,6 +1573,12 @@ function renderHeader() {
       <span>${label}</span>
     </button>`;
   });
+
+  // Always add Counter tab (for everyone)
+  tabs += `<button class="nav-item${showCounter ? ' active' : ''}" onclick="openCounter()" style="color:${showCounter ? 'var(--secondary)' : ''}">
+    <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+    <span>Counter</span>
+  </button>`;
 
   const adminHtml = isAdmin
     ? `<span class="admin-badge">ADMIN</span>
@@ -2832,6 +2870,307 @@ function closeQrScanner() {
   if (_qrStream) { _qrStream.getTracks().forEach(t => t.stop()); _qrStream = null; }
   if (_qrAnimFrame) { cancelAnimationFrame(_qrAnimFrame); _qrAnimFrame = null; }
   document.getElementById('qr-scanner-overlay').style.display = 'none';
+}
+
+// ===================== DART COUNTER =====================
+function openCounter() { showCounter = true; render(); }
+function closeCounter() { showCounter = false; render(); }
+
+function counterAddPlayer() {
+  if (C.players.length >= 4) return;
+  const n = C.players.length + 1;
+  C.players.push({name:'Spieler '+n, score:C.startScore, history:[]});
+  document.getElementById('counter-setup-players').innerHTML = counterPlayersHtml();
+}
+
+function counterRemovePlayer(i) {
+  if (C.players.length <= 1) return;
+  C.players.splice(i, 1);
+  document.getElementById('counter-setup-players').innerHTML = counterPlayersHtml();
+}
+
+function counterSetName(i, val) { C.players[i].name = val; }
+
+function counterSetStartScore(pts) {
+  C.startScore = pts;
+  C.players.forEach(p => p.score = pts);
+  const el = document.getElementById('counter-start-btns');
+  if (el) el.innerHTML = counterStartScoreBtns();
+}
+
+function counterStartScoreBtns() {
+  return [301,501,701].map(pts => `<button onclick="counterSetStartScore(${pts})" style="flex:1;padding:12px;background:${C.startScore===pts?'rgba(235,101,255,0.2)':'var(--glass-1)'};border:1px solid ${C.startScore===pts?'rgba(235,101,255,0.5)':'var(--glass-border)'};border-radius:10px;color:${C.startScore===pts?'var(--secondary)':'var(--text2)'};cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:20px;min-height:48px;transition:all 0.2s">${pts}</button>`).join('');
+}
+
+function counterPlayersHtml() {
+  return C.players.map((p,i) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="width:32px;height:32px;border-radius:50%;background:${COLORS[i]};display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${i+1}</div>
+      <input value="${esc(p.name)}" oninput="counterSetName(${i},this.value)" style="flex:1;background:rgba(148,170,255,0.06);border:1px solid var(--glass-border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;padding:10px 12px;outline:none;min-height:44px;transition:border-color 0.15s" placeholder="Name..." onfocus="this.style.borderColor='var(--secondary)'" onblur="this.style.borderColor='var(--glass-border)'"/>
+      ${C.players.length>1?`<button onclick="counterRemovePlayer(${i})" style="padding:8px 10px;background:rgba(255,110,132,0.1);border:1px solid rgba(255,110,132,0.3);border-radius:8px;color:var(--red);cursor:pointer;min-width:36px;min-height:36px;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>`:''}
+    </div>
+  `).join('');
+}
+
+function counterStartGame() {
+  C.players.forEach(p => { p.score = C.startScore; p.history = []; });
+  C.currentPlayer = 0;
+  C.currentThrows = [];
+  C.busted = false;
+  C.turnComplete = false;
+  C.gameOver = false;
+  C.winner = -1;
+  C.setup = false;
+  render();
+}
+
+function counterNewGame() {
+  C.setup = true;
+  C.players.forEach(p => { p.score = C.startScore; p.history = []; });
+  C.currentPlayer = 0;
+  C.currentThrows = [];
+  C.busted = false;
+  C.turnComplete = false;
+  C.gameOver = false;
+  C.winner = -1;
+  render();
+}
+
+function counterHit(num, mult) {
+  if (C.gameOver || C.busted || C.turnComplete) return;
+  if (C.currentThrows.length >= 3) return;
+
+  const pts = (num === 0) ? 0 : num * mult;
+  const p = C.players[C.currentPlayer];
+  const thrownSoFar = C.currentThrows.reduce((s,t) => s+t.pts, 0);
+  const remaining = p.score - thrownSoFar - pts;
+
+  let label;
+  if (num === 0) label = 'Miss';
+  else if (num === 25 && mult === 1) label = 'Bull';
+  else if (num === 25 && mult === 2) label = 'D-Bull';
+  else if (mult === 3) label = 'T'+num;
+  else if (mult === 2) label = 'D'+num;
+  else label = String(num);
+
+  C.currentThrows.push({num, mult, pts, label, remaining, bust: false});
+
+  // Check bust: overshoot, reach 1, or checkout with non-double
+  if (remaining < 0 || remaining === 1 || (remaining === 0 && mult !== 2)) {
+    C.currentThrows[C.currentThrows.length-1].bust = true;
+    C.busted = true;
+    render();
+    return;
+  }
+
+  // Win condition
+  if (remaining === 0 && mult === 2) {
+    p.score = 0;
+    p.history.push({throws:[...C.currentThrows], scoreAfter:0});
+    C.gameOver = true;
+    C.winner = C.currentPlayer;
+    render();
+    return;
+  }
+
+  // 3rd throw done — apply score
+  if (C.currentThrows.length === 3) {
+    p.score = remaining;
+    p.history.push({throws:[...C.currentThrows], scoreAfter:remaining});
+    C.turnComplete = true;
+  }
+
+  render();
+}
+
+function counterMiss() { counterHit(0, 1); }
+
+function counterUndo() {
+  if (C.gameOver) return;
+  if (C.currentThrows.length === 0) return;
+  if (C.turnComplete) {
+    const lastT = C.currentThrows[C.currentThrows.length-1];
+    C.players[C.currentPlayer].score += lastT.pts;
+    if (C.players[C.currentPlayer].history.length > 0) C.players[C.currentPlayer].history.pop();
+    C.turnComplete = false;
+  }
+  C.busted = false;
+  C.currentThrows.pop();
+  render();
+}
+
+function counterAdvanceTurn() {
+  if (C.busted) {
+    C.busted = false;
+  }
+  C.turnComplete = false;
+  C.currentThrows = [];
+  C.currentPlayer = (C.currentPlayer + 1) % C.players.length;
+  render();
+}
+
+function buildDartboard() {
+  const NUMS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+  const CX = 170, CY = 170;
+  const R_DBULL = 13, R_BULL = 29, R_IS = 92, R_TRI = 103, R_OS = 153, R_DBL = 165;
+  const toRad = d => d * Math.PI / 180;
+
+  function seg(r1, r2, a1d, a2d) {
+    const a1 = toRad(a1d), a2 = toRad(a2d);
+    const f = n => n.toFixed(2);
+    return `M${f(CX+r1*Math.cos(a1))},${f(CY+r1*Math.sin(a1))} A${r1},${r1},0,0,1,${f(CX+r1*Math.cos(a2))},${f(CY+r1*Math.sin(a2))} L${f(CX+r2*Math.cos(a2))},${f(CY+r2*Math.sin(a2))} A${r2},${r2},0,0,0,${f(CX+r2*Math.cos(a1))},${f(CY+r2*Math.sin(a1))} Z`;
+  }
+
+  let s = `<svg viewBox="-8 -8 356 356" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:360px;display:block;margin:0 auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent">`;
+  s += `<circle cx="170" cy="170" r="170" fill="#0d0905"/>`;
+  s += `<circle cx="170" cy="170" r="165" fill="#0d0905"/>`;
+
+  NUMS.forEach((num, i) => {
+    const a1 = -99 + i*18, a2 = a1 + 18;
+    const ev = i % 2 === 0;
+    const cs = ev ? '#1c1c1c' : '#e8d8a8';
+    const ca = ev ? '#c0392b' : '#27ae60';
+    s += `<path class="ds-seg" d="${seg(R_BULL,R_IS,a1,a2)}" fill="${cs}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},1)"/>`;
+    s += `<path class="ds-seg" d="${seg(R_IS,R_TRI,a1,a2)}" fill="${ca}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},3)"/>`;
+    s += `<path class="ds-seg" d="${seg(R_TRI,R_OS,a1,a2)}" fill="${cs}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},1)"/>`;
+    s += `<path class="ds-seg" d="${seg(R_OS,R_DBL,a1,a2)}" fill="${ca}" stroke="#222" stroke-width="0.5" onclick="counterHit(${num},2)"/>`;
+  });
+
+  // Bull
+  s += `<circle cx="170" cy="170" r="${R_BULL}" fill="#27ae60" stroke="#222" stroke-width="0.8" onclick="counterHit(25,1)" style="cursor:pointer"/>`;
+  s += `<circle cx="170" cy="170" r="${R_DBULL}" fill="#c0392b" stroke="#222" stroke-width="0.8" onclick="counterHit(25,2)" style="cursor:pointer"/>`;
+  s += `<text x="170" y="170" text-anchor="middle" dominant-baseline="central" fill="white" font-size="9" font-family="Space Grotesk,sans-serif" font-weight="700" pointer-events="none">50</text>`;
+  s += `<text x="170" y="${CY-(R_DBULL+R_BULL)/2}" text-anchor="middle" dominant-baseline="central" fill="white" font-size="8" font-family="Space Grotesk,sans-serif" pointer-events="none">25</text>`;
+
+  // Ring wire separators
+  [R_BULL, R_IS, R_TRI, R_OS, R_DBL].forEach(r => {
+    s += `<circle cx="170" cy="170" r="${r}" fill="none" stroke="#2a2a2a" stroke-width="1.2"/>`;
+  });
+
+  // Number labels just outside double ring
+  NUMS.forEach((num, i) => {
+    const angle = -90 + i * 18;
+    const r = 169;
+    const lx = CX + r * Math.cos(toRad(angle));
+    const ly = CY + r * Math.sin(toRad(angle));
+    s += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="central" fill="#e0e0e0" font-size="10" font-family="Space Grotesk,sans-serif" font-weight="700" pointer-events="none">${num}</text>`;
+  });
+
+  s += `</svg>`;
+  return s;
+}
+
+function renderCounter() {
+  if (C.setup) {
+    return `
+    <div style="padding:0 0 80px">
+      <div style="background:rgba(6,14,32,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--glass-border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;margin:0 -16px 24px">
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--primary);letter-spacing:0.05em;line-height:1">DARTS COUNTER</div>
+          <div style="font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:2px">501 · Double Out</div>
+        </div>
+        <button onclick="closeCounter()" style="padding:10px 14px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:10px;color:var(--text2);cursor:pointer;font-size:13px;font-family:'Space Grotesk',sans-serif;font-weight:600;min-height:44px;transition:all 0.2s">← Zurück</button>
+      </div>
+
+      <div class="section-title">Spieler</div>
+      <div id="counter-setup-players" style="margin-bottom:12px">${counterPlayersHtml()}</div>
+      ${C.players.length < 4 ? `<button onclick="counterAddPlayer()" style="width:100%;padding:12px;background:var(--glass-1);border:1px dashed var(--glass-border-strong);border-radius:10px;color:var(--text2);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:44px;transition:all 0.2s;margin-bottom:24px">+ Spieler hinzufügen</button>` : '<div style="margin-bottom:24px"></div>'}
+
+      <div class="section-title">Startpunkte</div>
+      <div id="counter-start-btns" style="display:flex;gap:8px;margin-bottom:28px">${counterStartScoreBtns()}</div>
+
+      <button onclick="counterStartGame()" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--secondary),rgba(162,0,187,0.9));border:none;border-radius:14px;color:white;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 32px rgba(235,101,255,0.3);min-height:54px">Spiel starten →</button>
+    </div>`;
+  }
+
+  // ---- GAME VIEW ----
+  const p = C.players[C.currentPlayer];
+  const thrownPts = C.currentThrows.reduce((s,t) => s+t.pts, 0);
+  const remaining = C.busted ? p.score : p.score - thrownPts;
+
+  // Player score cards
+  const playerCards = C.players.map((pl, i) => {
+    let cls = 'counter-player-card';
+    let sub = '';
+    if (C.gameOver && C.winner === i) { cls += ' cpc-winner'; sub = '🏆 GEWONNEN!'; }
+    else if (!C.gameOver && i === C.currentPlayer) {
+      cls += C.busted ? ' cpc-busted' : ' cpc-active';
+      sub = C.busted ? 'BUST!' : (C.turnComplete ? 'Fertig' : `${C.currentThrows.length}/3 Würfe`);
+    }
+    const scoreClass = 'cpc-score' + (pl.score <= 40 ? ' cpc-low' : '');
+    return `<div class="${cls}">
+      <div class="cpc-name">${esc(pl.name)}</div>
+      <div class="${scoreClass}">${pl.score}</div>
+      <div class="cpc-sub">${sub}</div>
+    </div>`;
+  }).join('');
+
+  // Throw slots
+  const throwSlots = [0,1,2].map(i => {
+    const t = C.currentThrows[i];
+    if (!t) return `<div class="cthrow-slot"><div>—</div><div class="cthrow-label">Wurf ${i+1}</div></div>`;
+    const cls = 'cthrow-slot filled' + (t.bust ? ' c-bust' : '');
+    return `<div class="${cls}"><div>${t.label}</div><div class="cthrow-label">${t.pts > 0 ? '+'+t.pts : '0'}</div></div>`;
+  }).join('');
+
+  // Turn total
+  const turnTotal = C.currentThrows.reduce((s,t)=>s+t.pts,0);
+
+  // Action buttons
+  let actionBtns = '';
+  if (C.gameOver) {
+    actionBtns = `<button onclick="counterNewGame()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--secondary),rgba(162,0,187,0.9));border:none;border-radius:12px;color:white;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 24px rgba(235,101,255,0.3);min-height:50px">Neues Spiel</button>`;
+  } else if (C.busted || C.turnComplete) {
+    const label = C.players.length > 1 ? `Nächster: ${esc(C.players[(C.currentPlayer+1)%C.players.length].name)} →` : 'Weiter →';
+    actionBtns = `
+      <div style="display:flex;gap:8px">
+        ${C.busted && !C.turnComplete ? `<button onclick="counterUndo()" style="flex:0 0 auto;padding:14px 16px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text2);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:50px">↩ Korr.</button>` : ''}
+        <button onclick="counterAdvanceTurn()" style="flex:1;padding:14px;background:${C.busted?'rgba(255,110,132,0.15)':'rgba(129,236,255,0.12)'};border:1px solid ${C.busted?'rgba(255,110,132,0.4)':'rgba(129,236,255,0.4)'};border-radius:12px;color:${C.busted?'var(--red)':'var(--tertiary)'};cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;min-height:50px">${C.busted?'BUST — '+label:label}</button>
+      </div>`;
+  } else {
+    actionBtns = `
+      <div style="display:flex;gap:8px">
+        <button onclick="counterMiss()" style="flex:1;padding:12px 10px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text3);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:50px;letter-spacing:0.05em">Miss</button>
+        <button onclick="counterUndo()" ${C.currentThrows.length===0?'disabled':''} style="flex:1;padding:12px 10px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text3);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:50px;letter-spacing:0.05em">↩ Undo</button>
+        ${C.currentThrows.length > 0 ? `<button onclick="counterAdvanceTurn()" style="flex:1;padding:12px 10px;background:rgba(148,170,255,0.1);border:1px solid rgba(148,170,255,0.25);border-radius:12px;color:var(--primary);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:50px;letter-spacing:0.05em">Weiter →</button>` : ''}
+      </div>`;
+  }
+
+  return `
+    <div style="padding:0 0 20px">
+      <!-- Header -->
+      <div style="background:rgba(6,14,32,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--glass-border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;margin:0 -16px 16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--primary);letter-spacing:0.05em;line-height:1">COUNTER</div>
+          <span style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase">${C.startScore} · Double Out</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="counterNewGame()" style="padding:8px 12px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:8px;color:var(--text3);cursor:pointer;font-size:12px;font-family:'Space Grotesk',sans-serif;font-weight:600;min-height:36px">Neu</button>
+          <button onclick="closeCounter()" style="padding:8px 12px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:8px;color:var(--text2);cursor:pointer;font-size:12px;font-family:'Space Grotesk',sans-serif;font-weight:600;min-height:36px">← Zurück</button>
+        </div>
+      </div>
+
+      <!-- Player scores -->
+      <div style="display:flex;gap:8px;margin-bottom:12px">${playerCards}</div>
+
+      <!-- Throw slots -->
+      <div style="display:flex;gap:6px;margin-bottom:${C.gameOver?'12px':'8px'}">${throwSlots}</div>
+
+      ${!C.gameOver && !C.busted && !C.turnComplete ? `
+      <div style="text-align:center;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text3);margin-bottom:10px">
+        ${turnTotal > 0 ? `Turn: <strong style="color:var(--text2)">${turnTotal}</strong> — Verbleibend: <strong style="color:${remaining<=40?'var(--secondary)':'var(--text)'}">${remaining}</strong>` : `<strong style="color:var(--text3)">${esc(p.name)}</strong> ist dran — Tippe auf das Board`}
+      </div>` : ''}
+
+      <!-- Dartboard -->
+      <div style="padding:0 4px;margin-bottom:12px">
+        ${buildDartboard()}
+      </div>
+
+      <!-- Action buttons -->
+      <div style="padding:0 4px">
+        ${actionBtns}
+      </div>
+    </div>`;
 }
 </script>
 </body>
