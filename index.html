@@ -3106,85 +3106,105 @@ function buildDartboard() {
     return `M${f(CX+r1*Math.cos(a1))},${f(CY+r1*Math.sin(a1))} A${r1},${r1},0,0,1,${f(CX+r1*Math.cos(a2))},${f(CY+r1*Math.sin(a2))} L${f(CX+r2*Math.cos(a2))},${f(CY+r2*Math.sin(a2))} A${r2},${r2},0,0,0,${f(CX+r2*Math.cos(a1))},${f(CY+r2*Math.sin(a1))} Z`;
   }
 
-  // Neon arcade palette
-  const SEG_D = '#050d1a';
-  const SEG_L = '#b4c0e4';
-  const C_RED = 'rgba(255,72,108,0.96)';
-  const C_GRN = 'rgba(60,228,255,0.92)';
-  const WIRE  = 'rgba(148,170,255,0.55)';
+  // Arcade palette — solid, plastic, subtle glow
+  const SEG_D = '#07111f';
+  const SEG_L = '#c2cce8';
+  const WIRE  = 'rgba(148,170,255,0.45)';
 
   let s = `<svg viewBox="-12 -12 364 364" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
   <defs>
-    <filter id="gr" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="gg" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="gbull" x="-80%" y="-80%" width="260%" height="260%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="gwire" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="b"/>
+    <!-- Subtle edge-glow on rings (reduced from before) -->
+    <filter id="gr" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.8" result="b"/>
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <radialGradient id="bg-spot" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="rgba(148,170,255,0.12)"/>
-      <stop offset="55%" stop-color="rgba(148,170,255,0.03)"/>
-      <stop offset="100%" stop-color="rgba(0,0,0,0.5)"/>
+    <filter id="gg" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.8" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gbull" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Plastic gradients — top-lit light source -->
+    <linearGradient id="gr-red" x1="0" y1="0" x2="0" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#ff8fa8"/>
+      <stop offset="40%"  stop-color="#e8294e"/>
+      <stop offset="100%" stop-color="#9c0e2a"/>
+    </linearGradient>
+    <linearGradient id="gr-grn" x1="0" y1="0" x2="0" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#a0f4ff"/>
+      <stop offset="40%"  stop-color="#18c8e8"/>
+      <stop offset="100%" stop-color="#047a98"/>
+    </linearGradient>
+    <linearGradient id="gr-dark" x1="0" y1="0" x2="0" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#0e1e36"/>
+      <stop offset="100%" stop-color="#030810"/>
+    </linearGradient>
+    <linearGradient id="gr-lite" x1="0" y1="0" x2="0" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#dce6ff"/>
+      <stop offset="100%" stop-color="#8898cc"/>
+    </linearGradient>
+    <!-- Board spotlight & vignette -->
+    <radialGradient id="bg-spot" cx="50%" cy="44%" r="52%">
+      <stop offset="0%"   stop-color="rgba(200,220,255,0.09)"/>
+      <stop offset="65%"  stop-color="rgba(100,130,255,0.02)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.55)"/>
     </radialGradient>
-    <radialGradient id="sheen" cx="33%" cy="22%" r="72%">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.22)"/>
-      <stop offset="40%" stop-color="rgba(255,255,255,0.05)"/>
-      <stop offset="100%" stop-color="rgba(0,0,20,0.35)"/>
+    <!-- Glass sheen — stronger top-left highlight -->
+    <radialGradient id="sheen" cx="30%" cy="18%" r="68%">
+      <stop offset="0%"   stop-color="rgba(255,255,255,0.28)"/>
+      <stop offset="35%"  stop-color="rgba(255,255,255,0.07)"/>
+      <stop offset="100%" stop-color="rgba(0,0,24,0.4)"/>
+    </radialGradient>
+    <!-- Concave inner shadow -->
+    <radialGradient id="inner-shadow" cx="50%" cy="50%" r="50%">
+      <stop offset="70%"  stop-color="rgba(0,0,0,0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.45)"/>
     </radialGradient>
   </defs>`;
 
-  // Outer glow halo
-  s += `<circle cx="170" cy="170" r="180" fill="rgba(0,0,20,0.75)"/>`;
-  s += `<circle cx="170" cy="170" r="172" fill="rgba(148,170,255,0.06)" filter="url(#gwire)"/>`;
-  // Board bg with spotlight
-  s += `<circle cx="170" cy="170" r="165" fill="#040a15"/>`;
+  // Board background
+  s += `<circle cx="170" cy="170" r="175" fill="rgba(0,0,18,0.6)"/>`;
+  s += `<circle cx="170" cy="170" r="165" fill="#050c18"/>`;
   s += `<circle cx="170" cy="170" r="165" fill="url(#bg-spot)"/>`;
 
   NUMS.forEach((num, i) => {
     const a1 = -99 + i*18, a2 = a1 + 18;
     const isEven = i % 2 === 0;
-    const segBase = isEven ? SEG_D : SEG_L;
-    const ringCol  = isEven ? C_RED : C_GRN;
+    const segFill  = isEven ? 'url(#gr-dark)' : 'url(#gr-lite)';
+    const ringFill = isEven ? 'url(#gr-red)'  : 'url(#gr-grn)';
     const glowId   = isEven ? 'gr' : 'gg';
-    s += `<path class="ds-seg" d="${seg(R_BULL,R_IS,a1,a2)}" fill="${segBase}" stroke="${WIRE}" stroke-width="0.3" onclick="counterHit(${num},1)"/>`;
-    s += `<path class="ds-seg" d="${seg(R_IS,R_TRI,a1,a2)}" fill="${ringCol}" stroke="none" filter="url(#${glowId})" onclick="counterHit(${num},3)"/>`;
-    s += `<path class="ds-seg" d="${seg(R_TRI,R_OS,a1,a2)}" fill="${segBase}" stroke="${WIRE}" stroke-width="0.3" onclick="counterHit(${num},1)"/>`;
-    s += `<path class="ds-seg" d="${seg(R_OS,R_DBL,a1,a2)}" fill="${ringCol}" stroke="none" filter="url(#${glowId})" onclick="counterHit(${num},2)"/>`;
+    s += `<path class="ds-seg" d="${seg(R_BULL,R_IS,a1,a2)}" fill="${segFill}" stroke="${WIRE}" stroke-width="0.4" onclick="counterHit(${num},1)"/>`;
+    s += `<path class="ds-seg" d="${seg(R_IS,R_TRI,a1,a2)}" fill="${ringFill}" stroke="${WIRE}" stroke-width="0.4" filter="url(#${glowId})" onclick="counterHit(${num},3)"/>`;
+    s += `<path class="ds-seg" d="${seg(R_TRI,R_OS,a1,a2)}" fill="${segFill}" stroke="${WIRE}" stroke-width="0.4" onclick="counterHit(${num},1)"/>`;
+    s += `<path class="ds-seg" d="${seg(R_OS,R_DBL,a1,a2)}" fill="${ringFill}" stroke="${WIRE}" stroke-width="0.4" filter="url(#${glowId})" onclick="counterHit(${num},2)"/>`;
   });
 
-  // Bull
-  s += `<circle cx="170" cy="170" r="${R_BULL}" fill="${C_GRN}" stroke="rgba(60,228,255,0.7)" stroke-width="1.5" filter="url(#gbull)" onclick="counterHit(25,1)" style="cursor:pointer"/>`;
-  s += `<circle cx="170" cy="170" r="${R_DBULL}" fill="${C_RED}" stroke="rgba(255,72,108,0.7)" stroke-width="1.5" filter="url(#gbull)" onclick="counterHit(25,2)" style="cursor:pointer"/>`;
+  // Bull — plastic with subtle glow
+  s += `<circle cx="170" cy="170" r="${R_BULL}" fill="url(#gr-grn)" stroke="rgba(100,220,255,0.6)" stroke-width="1.5" filter="url(#gbull)" onclick="counterHit(25,1)" style="cursor:pointer"/>`;
+  s += `<circle cx="170" cy="170" r="${R_DBULL}" fill="url(#gr-red)" stroke="rgba(255,100,130,0.6)" stroke-width="1.5" filter="url(#gbull)" onclick="counterHit(25,2)" style="cursor:pointer"/>`;
 
-  // Glass sheen
+  // Concave inner-shadow + glass sheen
+  s += `<circle cx="170" cy="170" r="165" fill="url(#inner-shadow)" pointer-events="none"/>`;
   s += `<circle cx="170" cy="170" r="165" fill="url(#sheen)" pointer-events="none"/>`;
 
   // Bull text
-  s += `<text x="170" y="170" text-anchor="middle" dominant-baseline="central" fill="white" font-size="9" font-family="Space Grotesk,sans-serif" font-weight="700" pointer-events="none">50</text>`;
-  s += `<text x="170" y="${CY-(R_DBULL+R_BULL)/2}" text-anchor="middle" dominant-baseline="central" fill="rgba(255,255,255,0.9)" font-size="8" font-family="Space Grotesk,sans-serif" pointer-events="none">25</text>`;
+  s += `<text x="170" y="170" text-anchor="middle" dominant-baseline="central" fill="rgba(255,255,255,0.95)" font-size="9" font-family="Space Grotesk,sans-serif" font-weight="700" pointer-events="none">50</text>`;
+  s += `<text x="170" y="${CY-(R_DBULL+R_BULL)/2}" text-anchor="middle" dominant-baseline="central" fill="rgba(255,255,255,0.85)" font-size="8" font-family="Space Grotesk,sans-serif" pointer-events="none">25</text>`;
 
-  // Neon ring wires
+  // Ring wires — clean, no blur
   [R_BULL, R_IS, R_TRI, R_OS, R_DBL].forEach(r => {
-    s += `<circle cx="170" cy="170" r="${r}" fill="none" stroke="rgba(148,170,255,0.6)" stroke-width="1.4" filter="url(#gwire)"/>`;
+    s += `<circle cx="170" cy="170" r="${r}" fill="none" stroke="rgba(148,170,255,0.4)" stroke-width="1.2"/>`;
   });
 
-  // Number labels — neon blue
+  // Number labels
   NUMS.forEach((num, i) => {
     const angle = -90 + i * 18;
     const r = 169;
     const lx = CX + r * Math.cos(toRad(angle));
     const ly = CY + r * Math.sin(toRad(angle));
-    s += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="central" fill="#c8d8ff" font-size="10" font-family="Space Grotesk,sans-serif" font-weight="700" pointer-events="none">${num}</text>`;
+    s += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="central" fill="#ccd8f8" font-size="10" font-family="Space Grotesk,sans-serif" font-weight="700" pointer-events="none">${num}</text>`;
   });
 
   s += `</svg>`;
