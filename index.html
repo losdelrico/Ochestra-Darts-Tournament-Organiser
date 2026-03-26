@@ -397,6 +397,55 @@
     .bracket-player-score { font-family: 'Bebas Neue', sans-serif; font-size: 20px; min-width: 24px; text-align: center; }
     .bracket-player-tbd { color: var(--text3); font-style: italic; font-size: 13px; font-weight: 400; font-family: 'DM Sans', sans-serif; }
 
+    /* --- BRACKET TREE --- */
+    .bkt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -16px; padding: 0 16px 12px; }
+    .bkt-tree { display: inline-flex; align-items: flex-start; gap: 0; }
+    .bkt-col { display: flex; flex-direction: column; width: 160px; flex-shrink: 0; }
+    .bkt-col-hdr { font-family: 'Space Grotesk', sans-serif; font-size: 9px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; text-align: center; }
+    .bkt-gap { width: 32px; flex-shrink: 0; }
+    .bkt-pair { position: relative; }
+    .bkt-pair-conn::after {
+      content: ''; position: absolute;
+      right: -16px; width: 16px;
+      top: var(--co); bottom: var(--co);
+      border-top: 1px solid rgba(148,170,255,0.15);
+      border-right: 1px solid rgba(148,170,255,0.15);
+      border-bottom: 1px solid rgba(148,170,255,0.15);
+      border-radius: 0 3px 3px 0; pointer-events: none;
+    }
+    .bkt-pair-conn::before {
+      content: ''; position: absolute;
+      right: -32px; width: 16px;
+      top: 50%; height: 1px;
+      background: rgba(148,170,255,0.15); pointer-events: none;
+    }
+    /* Compact match card */
+    .bmc { background: var(--glass-1); border: 1px solid var(--glass-border); border-radius: 10px; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; position: relative; }
+    .bmc:not(.bmc-tbd):not(.bmc-done) { cursor: pointer; }
+    .bmc:not(.bmc-tbd):not(.bmc-done):hover { border-color: rgba(148,170,255,0.3); }
+    .bmc-active { border-left: 2px solid var(--secondary); border-color: rgba(235,101,255,0.35); box-shadow: 0 0 14px rgba(235,101,255,0.12); }
+    .bmc-done { opacity: 0.85; cursor: default; }
+    .bmc-tbd { opacity: 0.35; cursor: not-allowed; }
+    .bmc-has-proposal { border-color: rgba(255,193,7,0.35); }
+    .bmc-live { height: 2px; background: var(--secondary); animation: pulse-dot 1.2s infinite; }
+    .bmc-row { display: flex; align-items: center; gap: 6px; padding: 9px 10px; }
+    .bmc-win { background: rgba(235,101,255,0.07); }
+    .bmc-lose { opacity: 0.4; }
+    .bmc-divider { height: 1px; background: var(--glass-border); }
+    .bmc-name { flex: 1; font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .bmc-tbd-name { color: var(--text3); font-style: italic; font-size: 11px; font-weight: 400; font-family: 'DM Sans', sans-serif; }
+    .bmc-sc { font-family: 'Bebas Neue', sans-serif; font-size: 15px; color: var(--text3); flex-shrink: 0; min-width: 16px; text-align: center; }
+    .bmc-sc-w { color: var(--tertiary); }
+    .bmc-prop { display: flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(255,193,7,0.05); border-top: 1px solid rgba(255,193,7,0.15); }
+    .bmc-prop-lbl { font-size: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: rgba(255,193,7,0.5); letter-spacing: 0.08em; text-transform: uppercase; flex-shrink: 0; }
+    .bmc-prop-sc { font-family: 'Bebas Neue', sans-serif; font-size: 13px; color: #ffc107; flex: 1; }
+    .bmc-prop-wait { font-size: 9px; color: var(--text3); font-family: 'DM Sans', sans-serif; flex: 1; text-align: right; }
+    .bmc-btn-ok { padding: 2px 6px; background: rgba(129,236,255,0.12); border: 1px solid rgba(129,236,255,0.28); border-radius: 4px; color: var(--tertiary); font-size: 10px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+    .bmc-btn-x  { padding: 2px 6px; background: rgba(255,110,132,0.1); border: 1px solid rgba(255,110,132,0.25); border-radius: 4px; color: var(--red); font-size: 10px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+    .bmc-melden { border-top: 1px solid var(--glass-border); padding: 4px 8px; }
+    .bmc-melden-btn { width: 100%; padding: 4px 0; background: rgba(148,170,255,0.05); border: 1px solid rgba(148,170,255,0.12); border-radius: 5px; color: var(--primary); font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .bmc-undo { border-top: 1px solid var(--glass-border); padding: 3px 8px; display: flex; justify-content: flex-end; }
+
     /* --- RESULTS --- */
     .podium { display: flex; align-items: flex-end; justify-content: center; gap: 12px; margin: 32px 0; }
     .podium-place { display: flex; flex-direction: column; align-items: center; gap: 8px; }
@@ -1883,43 +1932,59 @@ function renderKnockout() {
   const totalRounds = rounds.length;
   const activeCount = getActiveMatchCount();
 
-  let bracketHtml = '';
+  // Bracket tree geometry
+  const BASE_CELL = 80; // card ~72px + 8px gap
+  const CARD_H = 72;
+  const cellPad = rIdx => (Math.pow(2, rIdx) * BASE_CELL - CARD_H) / 2;
+  const connOffset = rIdx => Math.pow(2, rIdx) * (BASE_CELL / 2); // = var(--co)
+
+  let treeHtml = '<div class="bkt-scroll"><div class="bkt-tree">';
+
   rounds.forEach((roundIds, rIdx) => {
     const name = knockoutRoundName(rIdx, totalRounds);
     const matches = roundIds.map(id => T.matches.find(m => m.id === id)).filter(Boolean);
-    const matchesHtml = matches.map(m => {
+    const isLast = rIdx === totalRounds - 1;
+    const pad = cellPad(rIdx);
+    const co = connOffset(rIdx);
+
+    treeHtml += `<div class="bkt-col"><div class="bkt-col-hdr">${name}</div>`;
+
+    if (matches.length === 1) {
+      const m = matches[0];
       const canStart = isAdmin && m.status === 'pending' && m.p1 && m.p2 && activeCount < T.cfg.boards;
-      return renderBracketMatch(m, canStart);
-    }).join('');
-    bracketHtml += `
-      <div class="bracket-section">
-        <div class="bracket-round-title">${name}</div>
-        <div class="bracket-matches">${matchesHtml}</div>
-      </div>
-    `;
+      treeHtml += `<div class="bkt-cell" style="padding:${pad}px 0">${renderBracketMatchCompact(m, canStart)}</div>`;
+    } else {
+      for (let i = 0; i < matches.length; i += 2) {
+        const m1 = matches[i];
+        const m2 = matches[i + 1];
+        const cs1 = isAdmin && m1 && m1.status === 'pending' && m1.p1 && m1.p2 && activeCount < T.cfg.boards;
+        const cs2 = m2 && isAdmin && m2.status === 'pending' && m2.p1 && m2.p2 && activeCount < T.cfg.boards;
+        treeHtml += `<div class="bkt-pair${!isLast ? ' bkt-pair-conn' : ''}" style="--co:${co}px">`;
+        treeHtml += `<div class="bkt-cell" style="padding:${pad}px 0">${renderBracketMatchCompact(m1, cs1)}</div>`;
+        if (m2) treeHtml += `<div class="bkt-cell" style="padding:${pad}px 0">${renderBracketMatchCompact(m2, cs2)}</div>`;
+        treeHtml += `</div>`;
+      }
+    }
+
+    treeHtml += `</div>`; // bkt-col
+    if (!isLast) treeHtml += `<div class="bkt-gap"></div>`;
   });
 
+  treeHtml += '</div></div>';
+
   const thirdMatch = T.matches.find(m => m.phase === 'knockout3rd');
+  let thirdHtml = '';
   if (thirdMatch) {
     const canStart = isAdmin && thirdMatch.status === 'pending' && thirdMatch.p1 && thirdMatch.p2 && activeCount < T.cfg.boards;
-    bracketHtml += `
-      <div class="bracket-section">
-        <div class="bracket-round-title">Spiel um Platz 3</div>
-        <div class="bracket-matches">${renderBracketMatch(thirdMatch, canStart)}</div>
-      </div>
-    `;
+    thirdHtml = `<div style="margin-top:16px"><div class="bracket-round-title">Spiel um Platz 3</div><div style="margin-top:8px">${renderBracketMatchCompact(thirdMatch, canStart)}</div></div>`;
   }
 
   const complete = isKnockoutComplete();
-
   return `
     ${renderBoardSlots()}
-    ${bracketHtml}
-    ${complete && isAdmin ? `
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">
-        <button class="btn btn-primary" onclick="goToResults()">Ergebnisse anzeigen</button>
-      </div>
-    ` : ''}
+    ${treeHtml}
+    ${thirdHtml}
+    ${complete && isAdmin ? `<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn btn-primary" onclick="goToResults()">Ergebnisse anzeigen</button></div>` : ''}
   `;
 }
 
@@ -1992,6 +2057,65 @@ function renderBracketMatch(m, canStart) {
       : !isAdmin && m.status !== 'done' && m.p1 && m.p2 ? `<div style="padding:6px 12px"><button onclick="openProposalModal('${m.id}')" style="width:100%;padding:8px;background:rgba(148,170,255,0.08);border:1px solid rgba(148,170,255,0.2);border-radius:8px;color:var(--primary);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Ergebnis melden</button></div>` : ''}
     </div>
   `;
+}
+
+function renderBracketMatchCompact(m, canStart) {
+  if (!m) return '';
+  const tbd1 = !m.p1, tbd2 = !m.p2;
+  const isFreilos = m.status === 'done' && (!m.p1 || !m.p2);
+  const w1 = m.winner && m.winner === m.p1;
+  const w2 = m.winner && m.winner === m.p2;
+  const proposalEntry = Object.entries(pendingProposals).find(([, p]) => p.matchId === m.id);
+  const proposal = proposalEntry ? proposalEntry[1] : null;
+  const proposalId = proposalEntry ? proposalEntry[0] : null;
+  const hasProp = proposal && m.status !== 'done';
+  const editDone = m.status === 'done' && isAdmin;
+  const clickable = isAdmin && m.status !== 'done' && (m.status === 'active' || canStart) && m.p1 && m.p2;
+  const onclick = (clickable || editDone) ? `openScoreModal('${m.id}')` : '';
+  let cls = 'bmc';
+  if (m.status === 'active') cls += ' bmc-active';
+  else if (m.status === 'done') cls += ' bmc-done';
+  if (tbd1 && tbd2) cls += ' bmc-tbd';
+  if (hasProp) cls += ' bmc-has-proposal';
+
+  if (isFreilos) {
+    return `<div class="${cls}">
+      <div class="bmc-row bmc-win">${playerAvatar(m.winner, 18)}<span class="bmc-name">${esc(playerName(m.winner))}</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--tertiary)" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="bmc-divider"></div>
+      <div class="bmc-row"><span class="bmc-name bmc-tbd-name" style="width:100%;text-align:center">Freilos</span></div>
+    </div>`;
+  }
+
+  const ph1 = `<div style="width:18px;height:18px;border-radius:50%;background:var(--glass-2);flex-shrink:0"></div>`;
+  return `<div class="${cls}" ${onclick ? `onclick="${onclick}"` : ''}>
+    ${m.status === 'active' ? `<div class="bmc-live"></div>` : ''}
+    <div class="bmc-row ${w1 ? 'bmc-win' : w2 ? 'bmc-lose' : ''}">
+      ${m.p1 ? playerAvatar(m.p1, 18) : ph1}
+      <span class="bmc-name ${tbd1 ? 'bmc-tbd-name' : ''}">${tbd1 ? 'TBD' : esc(playerName(m.p1))}</span>
+      ${m.status === 'done' ? `<span class="bmc-sc ${w1 ? 'bmc-sc-w' : ''}">${m.legs1}</span>` : ''}
+      ${w1 ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--tertiary)" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+    </div>
+    <div class="bmc-divider"></div>
+    <div class="bmc-row ${w2 ? 'bmc-win' : w1 ? 'bmc-lose' : ''}">
+      ${m.p2 ? playerAvatar(m.p2, 18) : ph1}
+      <span class="bmc-name ${tbd2 ? 'bmc-tbd-name' : ''}">${tbd2 ? 'TBD' : esc(playerName(m.p2))}</span>
+      ${m.status === 'done' ? `<span class="bmc-sc ${w2 ? 'bmc-sc-w' : ''}">${m.legs2}</span>` : ''}
+      ${w2 ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--tertiary)" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+    </div>
+    ${hasProp ? `<div class="bmc-prop">
+      <span class="bmc-prop-lbl">GEMELDET</span>
+      <span style="color:rgba(255,193,7,0.25);margin:0 2px">|</span>
+      <span class="bmc-prop-sc">${proposal.legs1}:${proposal.legs2}</span>
+      ${isAdmin
+        ? `<button onclick="event.stopPropagation();approveProposalAnimated('${proposalId}',this)" class="bmc-btn-ok">✓</button>
+           <button onclick="event.stopPropagation();rejectProposal('${proposalId}')" class="bmc-btn-x">✕</button>`
+        : `<span class="bmc-prop-wait">Warte…</span>`}
+    </div>` : ''}
+    ${!isAdmin && m.status !== 'done' && m.p1 && m.p2 && !proposal
+      ? `<div class="bmc-melden"><button onclick="event.stopPropagation();openProposalModal('${m.id}')" class="bmc-melden-btn"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Melden</button></div>` : ''}
+    ${m.status === 'done' && isAdmin
+      ? `<div class="bmc-undo"><button class="undo-btn" onclick="event.stopPropagation();undoMatch('${m.id}')">Undo</button></div>` : ''}
+  </div>`;
 }
 
 function renderResults() {
@@ -2628,7 +2752,7 @@ function approveProposalAnimated(proposalId, btn) {
 
 // ===================== SCROLL TO FIRST PROPOSAL =====================
 function scrollToFirstProposal() {
-  const row = document.querySelector('[data-proposal-row]');
+  const row = document.querySelector('[data-proposal-row]') || document.querySelector('.bmc-has-proposal');
   if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
