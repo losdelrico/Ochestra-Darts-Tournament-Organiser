@@ -3128,8 +3128,8 @@ function buildDartboard() {
     const a1 = -99 + i*18, a2 = a1 + 18;
     const isEven = i % 2 === 0;
     const segBase = isEven ? SEG_D : SEG_L;
-    const ringTri = isEven ? C_GRN : C_RED;
-    const ringDbl = isEven ? C_GRN : C_RED;
+    const ringTri = isEven ? C_RED : C_GRN;
+    const ringDbl = isEven ? C_RED : C_GRN;
     s += `<path class="ds-seg" d="${seg(R_BULL,R_IS,a1,a2)}" fill="${segBase}" stroke="${WIRE}" stroke-width="0.5" onclick="counterHit(${num},1)"/>`;
     s += `<path class="ds-seg" d="${seg(R_IS,R_TRI,a1,a2)}" fill="${ringTri}" stroke="${WIRE}" stroke-width="0.5" onclick="counterHit(${num},3)"/>`;
     s += `<path class="ds-seg" d="${seg(R_TRI,R_OS,a1,a2)}" fill="${segBase}" stroke="${WIRE}" stroke-width="0.5" onclick="counterHit(${num},1)"/>`;
