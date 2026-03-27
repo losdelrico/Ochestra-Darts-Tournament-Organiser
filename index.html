@@ -761,7 +761,7 @@ let C = {
 const DEFAULT_STATE = () => ({
   id: uid(),
   phase: 'setup',
-  cfg: { name: '', boards: 2, legsGroup: 3, legsKO: 5, legsFinal: 5, groupCount: 1, include3rd: true, advanceCount: 2 },
+  cfg: { name: '', boards: 2, legsGroup: 3, legsKO: 5, legsFinal: 5, groupCount: 1, include3rd: true, advanceCount: 2, advanceAll: false },
   players: [],
   groups: [],
   matches: [],
@@ -1129,21 +1129,23 @@ function allGroupMatchesDone() {
 }
 
 function generateKnockout() {
-  const advance = T.cfg.advanceCount;
+  const advanceAll = !!T.cfg.advanceAll;
   let seeds = [];
   if (T.groups.length === 1) {
     const standings = getGroupStandings(T.groups[0].id);
-    seeds = standings.slice(0, Math.min(advance, standings.length)).map(s => s.pid);
+    const take = advanceAll ? standings.length : Math.min(T.cfg.advanceCount, standings.length);
+    seeds = standings.slice(0, take).map(s => s.pid);
   } else {
     const byRank = {};
     T.groups.forEach(g => {
       const standings = getGroupStandings(g.id);
-      standings.slice(0, advance).forEach((s, rank) => {
+      const take = advanceAll ? standings.length : T.cfg.advanceCount;
+      standings.slice(0, take).forEach((s, rank) => {
         if (!byRank[rank]) byRank[rank] = [];
         byRank[rank].push(s.pid);
       });
     });
-    const maxRank = advance;
+    const maxRank = Object.keys(byRank).length;
     for (let r = 0; r < maxRank; r++) {
       if (byRank[r]) seeds = seeds.concat(byRank[r]);
     }
@@ -1630,6 +1632,7 @@ function renderSetup() {
           <div style="font-size:14px;color:var(--text2);font-family:'DM Sans',sans-serif">Vorrunde: Best of ${T.cfg.legsGroup||T.cfg.legs||3}</div>
           <div style="font-size:14px;color:var(--text2);font-family:'DM Sans',sans-serif">K.O.: Best of ${T.cfg.legsKO||T.cfg.legs||5}</div>
           <div style="font-size:14px;color:var(--text2);font-family:'DM Sans',sans-serif">Finale: Best of ${T.cfg.legsFinal||T.cfg.legs||5}</div>
+          ${T.cfg.advanceAll ? `<div style="font-size:14px;color:var(--tertiary);font-family:'DM Sans',sans-serif">Alle qualifizieren</div>` : ''}
           <div style="font-size:14px;color:var(--text2);font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>${T.cfg.boards} Board${T.cfg.boards > 1 ? 's' : ''}</div>
         </div>
         <div class="view-only-notice">Live-Ansicht — Admin-Login erforderlich um Einstellungen zu ändern</div>
@@ -1686,9 +1689,15 @@ function renderSetup() {
             <select onchange="T.cfg.groupCount=parseInt(this.value);save()">${groupOptions}</select>
           </div>
           <div class="field">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:normal;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;color:var(--text2)">
+              <input type="checkbox" ${cfg.advanceAll ? 'checked' : ''} onchange="T.cfg.advanceAll=this.checked;save();render()" style="width:auto">
+              Alle qualifizieren (kein Ausscheiden)
+            </label>
+          </div>
+          ${!cfg.advanceAll ? `<div class="field">
             <label>Weiter pro Gruppe <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text3)">(~${expectedGrpSize} Spieler/Gruppe)</span></label>
             <input type="number" min="1" max="${players.length > 0 ? players.length - 1 : 99}" value="${cfg.advanceCount||2}" onchange="T.cfg.advanceCount=Math.max(1,parseInt(this.value)||1);save()" style="width:100%;text-align:center;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700">
-          </div>
+          </div>` : ''}
           <div class="field">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:normal;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;color:var(--text2)">
               <input type="checkbox" ${cfg.include3rd ? 'checked' : ''} onchange="T.cfg.include3rd=this.checked;save()" style="width:auto">
@@ -1765,7 +1774,7 @@ function renderGroupStandings(g) {
           <thead><tr><th></th><th>Spieler</th><th>W</th><th>L</th><th>Legs</th><th>Pkt</th></tr></thead>
           <tbody>
             ${standings.map((s, i) => {
-              const adv = i < T.cfg.advanceCount;
+              const adv = T.cfg.advanceAll || i < T.cfg.advanceCount;
               return `<tr class="${adv ? 'advance-row' : ''}">
                 <td class="rank">${i + 1}</td>
                 <td class="${adv ? 'advance' : ''}">
