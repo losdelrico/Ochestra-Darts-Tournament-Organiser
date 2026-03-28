@@ -3175,8 +3175,6 @@ function counterSwapPlayers() {
 function counterCorrectThrow(throwIdx) {
   if (throwIdx >= C.currentThrows.length || !C.currentThrows[throwIdx]) return;
   C.currentThrows[throwIdx] = null;
-  // Trim trailing nulls so array length stays clean
-  while (C.currentThrows.length > 0 && C.currentThrows[C.currentThrows.length-1] === null) C.currentThrows.pop();
   // Reset doubleInDone if needed
   if (C.doubleIn) {
     const p = C.players[C.currentPlayer];
