@@ -3207,6 +3207,7 @@ function counterUndo() {
 
 function counterUndoToTurn(turnsBack) {
   C.correctionIdx = -1;
+  C.confirmAction = null;
   let restored = [];
   for (let i = 0; i < turnsBack; i++) {
     if (C.recentTurns.length === 0) break;
@@ -3214,7 +3215,7 @@ function counterUndoToTurn(turnsBack) {
     C.currentPlayer = lt.player;
     C.players[lt.player].score = lt.scoreBefore;
     if (C.players[lt.player].history.length > 0) C.players[lt.player].history.pop();
-    if (i === 0) restored = [...lt.throws];
+    restored = [...lt.throws]; // last iteration = the turn to re-enter
   }
   C.currentThrows = restored;
   if (C.doubleIn) {
