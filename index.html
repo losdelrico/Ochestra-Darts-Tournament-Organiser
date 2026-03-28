@@ -757,7 +757,8 @@ let C = {
   currentPlayer: 0, currentThrows: [],
   recentTurns: [], gameOver: false, winner: -1, confirmAction: null,
   doubleIn: false, doubleOut: true,
-  bestOf: 1, currentLeg: 1, firstPlayerLeg: 0, legJustWon: -1
+  bestOf: 1, currentLeg: 1, firstPlayerLeg: 0, legJustWon: -1,
+  correctionIdx: -1
 };
 
 const DEFAULT_STATE = () => ({
@@ -3035,6 +3036,7 @@ function counterStartGame() {
   C.currentLeg = 1;
   C.firstPlayerLeg = 0;
   C.legJustWon = -1;
+  C.correctionIdx = -1;
   C.setup = false;
   render();
 }
@@ -3051,12 +3053,12 @@ function counterNewGame() {
   C.currentLeg = 1;
   C.firstPlayerLeg = 0;
   C.legJustWon = -1;
+  C.correctionIdx = -1;
   render();
 }
 
 function counterHit(num, mult) {
   if (C.gameOver) return;
-  if (C.currentThrows.length >= 3 && !C.currentThrows.includes(null)) return;
 
   let label;
   if (num === 0) label = 'Miss';
@@ -3067,16 +3069,35 @@ function counterHit(num, mult) {
   else label = String(num);
 
   const p = C.players[C.currentPlayer];
-  const thrownSoFar = C.currentThrows.reduce((s,t) => s + (t ? t.pts : 0), 0);
+
+  // --- CORRECTION MODE: replace a specific slot ---
+  if (C.correctionIdx >= 0) {
+    const pts = num === 0 ? 0 : num * mult;
+    const thrownExcl = C.currentThrows.reduce((s,t,i) => s + (i !== C.correctionIdx ? t.pts : 0), 0);
+    const remaining = p.score - thrownExcl - pts;
+    // Double In check for correction
+    if (C.doubleIn && !p.doubleInDone && mult !== 2) {
+      C.currentThrows[C.correctionIdx] = {num, mult, pts: 0, label, remaining: p.score, bust: false, noDoubleIn: true};
+    } else {
+      if (C.doubleIn && !p.doubleInDone && mult === 2) p.doubleInDone = true;
+      C.currentThrows[C.correctionIdx] = {num, mult, pts, label, remaining, bust: false};
+    }
+    C.correctionIdx = -1;
+    render();
+    return;
+  }
+
+  // --- NORMAL THROW MODE ---
+  if (C.currentThrows.length >= 3) return;
+
+  const thrownSoFar = C.currentThrows.reduce((s,t) => s + t.pts, 0);
 
   // Double In: player hasn't opened yet
   if (C.doubleIn && !p.doubleInDone) {
     const isOpeningDouble = mult === 2 && num !== 0;
     if (!isOpeningDouble) {
-      const nullIdx = C.currentThrows.indexOf(null);
-      if (nullIdx >= 0) C.currentThrows[nullIdx] = {num, mult, pts: 0, label, remaining: p.score, bust: false, noDoubleIn: true};
-      else C.currentThrows.push({num, mult, pts: 0, label, remaining: p.score, bust: false, noDoubleIn: true});
-      if (C.currentThrows.length === 3 && !C.currentThrows.includes(null)) {
+      C.currentThrows.push({num, mult, pts: 0, label, remaining: p.score, bust: false, noDoubleIn: true});
+      if (C.currentThrows.length === 3) {
         const doneTurn = {player: C.currentPlayer, name: p.name, scoreBefore: p.score, throws: [...C.currentThrows], wasBust: false, noDoubleIn: true};
         C.recentTurns.push(doneTurn);
         if (C.recentTurns.length > 3) C.recentTurns.shift();
@@ -3090,15 +3111,13 @@ function counterHit(num, mult) {
     p.doubleInDone = true;
   }
 
-  const pts = (num === 0) ? 0 : num * mult;
+  const pts = num === 0 ? 0 : num * mult;
   const remaining = p.score - thrownSoFar - pts;
 
-  const nullIdx = C.currentThrows.indexOf(null);
-  if (nullIdx >= 0) C.currentThrows[nullIdx] = {num, mult, pts, label, remaining, bust: false};
-  else C.currentThrows.push({num, mult, pts, label, remaining, bust: false});
+  C.currentThrows.push({num, mult, pts, label, remaining, bust: false});
 
-  // Bust check — only if no null holes remain
-  const isBust = !C.currentThrows.includes(null) && (remaining < 0 || (C.doubleOut && (remaining === 1 || (remaining === 0 && mult !== 2))));
+  // Bust check
+  const isBust = remaining < 0 || (C.doubleOut && (remaining === 1 || (remaining === 0 && mult !== 2)));
   if (isBust) {
     C.currentThrows[C.currentThrows.length-1].bust = true;
     const bustTurn = {player: C.currentPlayer, name: p.name, scoreBefore: p.score, throws: [...C.currentThrows], wasBust: true};
@@ -3111,8 +3130,8 @@ function counterHit(num, mult) {
     return;
   }
 
-  // Win condition — only if no null holes remain
-  const isWin = !C.currentThrows.includes(null) && remaining === 0 && (!C.doubleOut || mult === 2);
+  // Win condition
+  const isWin = remaining === 0 && (!C.doubleOut || mult === 2);
   if (isWin) {
     p.score = 0;
     p.history.push({throws:[...C.currentThrows], scoreAfter:0});
@@ -3120,8 +3139,8 @@ function counterHit(num, mult) {
     return;
   }
 
-  // 3rd throw done — apply score and auto-advance (only when all slots filled)
-  if (C.currentThrows.length === 3 && !C.currentThrows.includes(null)) {
+  // 3rd throw done — apply score and auto-advance
+  if (C.currentThrows.length === 3) {
     const doneTurn = {player: C.currentPlayer, name: p.name, scoreBefore: p.score, throws: [...C.currentThrows], wasBust: false};
     C.recentTurns.push(doneTurn);
     if (C.recentTurns.length > 3) C.recentTurns.shift();
@@ -3160,6 +3179,7 @@ function counterContinueLeg() {
   C.recentTurns = [];
   C.players.forEach(p => { p.score = C.startScore; p.history = []; p.doubleInDone = false; });
   C.legJustWon = -1;
+  C.correctionIdx = -1;
   render();
 }
 
@@ -3173,32 +3193,20 @@ function counterSwapPlayers() {
 }
 
 function counterCorrectThrow(throwIdx) {
-  if (throwIdx >= C.currentThrows.length || !C.currentThrows[throwIdx]) return;
-  C.currentThrows[throwIdx] = null;
-  // Reset doubleInDone if needed
-  if (C.doubleIn) {
-    const p = C.players[C.currentPlayer];
-    const histOk = p.history.some(h => !h.noDoubleIn && !h.wasBust);
-    const currOk = C.currentThrows.some(t => t && !t.noDoubleIn);
-    p.doubleInDone = histOk || currOk;
-  }
+  if (throwIdx >= C.currentThrows.length) return;
+  C.correctionIdx = (C.correctionIdx === throwIdx) ? -1 : throwIdx;
   render();
 }
 
 function counterUndo() {
-  if (C.gameOver || C.currentThrows.every(t => !t)) return;
-  // Remove last non-null throw
-  for (let i = C.currentThrows.length - 1; i >= 0; i--) {
-    if (C.currentThrows[i] !== null) {
-      C.currentThrows[i] = null;
-      while (C.currentThrows.length > 0 && !C.currentThrows[C.currentThrows.length-1]) C.currentThrows.pop();
-      break;
-    }
-  }
+  if (C.correctionIdx >= 0) { C.correctionIdx = -1; render(); return; }
+  if (C.gameOver || C.currentThrows.length === 0) return;
+  C.currentThrows.pop();
   render();
 }
 
 function counterUndoToTurn(turnsBack) {
+  C.correctionIdx = -1;
   for (let i = 0; i < turnsBack; i++) {
     if (C.recentTurns.length === 0) break;
     const lt = C.recentTurns.pop();
@@ -3585,25 +3593,25 @@ function renderCounter() {
     </div>`;
   }).join('');
 
-  // Throw slots — filled slots clickable to correct; null = cleared slot waiting for re-entry
-  const hasNullSlot = C.currentThrows.includes(null);
+  // Throw slots — tap any filled slot to enter correction mode (amber), then tap board to replace
   const throwSlots = [0,1,2].map(i => {
     const t = C.currentThrows[i];
-    if (t === null) {
-      return `<div class="cthrow-slot" style="border-color:rgba(255,193,7,0.45);background:rgba(255,193,7,0.06)"><div style="color:rgba(255,193,7,0.7);font-size:18px">?</div><div class="cthrow-label" style="color:rgba(255,193,7,0.5)">Korr.</div></div>`;
-    }
+    const isCorrectingThis = C.correctionIdx === i;
     if (t) {
+      if (isCorrectingThis) {
+        return `<button onclick="counterCorrectThrow(${i})" class="cthrow-slot filled" style="cursor:pointer;border:none;width:100%;padding:0;background:rgba(255,193,7,0.14);border-color:rgba(255,193,7,0.7);box-shadow:0 0 10px rgba(255,193,7,0.25);-webkit-tap-highlight-color:transparent"><div style="color:rgba(255,193,7,1);font-size:15px">${t.label}</div><div class="cthrow-label" style="color:rgba(255,193,7,0.7)">✎ tippen</div></button>`;
+      }
       if (t.noDoubleIn) {
-        return `<button onclick="counterCorrectThrow(${i})" class="cthrow-slot filled" title="Kein Double In — klicken zum Korrigieren" style="cursor:pointer;border:none;width:100%;padding:0;background:rgba(255,110,132,0.06);border-color:rgba(255,110,132,0.25)"><div style="color:rgba(255,110,132,0.7)">${t.label}</div><div class="cthrow-label" style="color:rgba(255,110,132,0.5)">kein DI<span style="font-size:9px;margin-left:3px">✎</span></div></button>`;
+        return `<button onclick="counterCorrectThrow(${i})" class="cthrow-slot filled" style="cursor:pointer;border:none;width:100%;padding:0;background:rgba(255,110,132,0.06);border-color:rgba(255,110,132,0.25);-webkit-tap-highlight-color:transparent"><div style="color:rgba(255,110,132,0.7)">${t.label}</div><div class="cthrow-label" style="color:rgba(255,110,132,0.5)">kein DI ✎</div></button>`;
       }
       const cls = 'cthrow-slot filled' + (t.bust ? ' c-bust' : '');
-      return `<button onclick="counterCorrectThrow(${i})" class="${cls}" title="Klicken zum Korrigieren" style="cursor:pointer;border:none;width:100%;padding:0"><div>${t.label}</div><div class="cthrow-label">${t.pts > 0 ? '+'+t.pts : '0'}<span style="font-size:9px;color:rgba(255,255,255,0.3);margin-left:3px">✎</span></div></button>`;
+      return `<button onclick="counterCorrectThrow(${i})" class="${cls}" style="cursor:pointer;border:none;width:100%;padding:0;-webkit-tap-highlight-color:transparent"><div>${t.label}</div><div class="cthrow-label">${t.pts > 0 ? '+'+t.pts : '0'} ✎</div></button>`;
     }
-    // Empty slot — show checkout hint only when no null holes
-    if (!hasNullSlot) {
-      const hintScore = p.score - C.currentThrows.slice(0,i).reduce((s,x)=>s+(x?x.pts:0),0);
+    // Empty slot
+    if (C.correctionIdx < 0) {
+      const hintScore = p.score - C.currentThrows.slice(0,i).reduce((s,x)=>s+x.pts,0);
       const hint = C.doubleOut ? getCheckout(hintScore) : null;
-      const hintDart = hint ? hint[i - C.currentThrows.filter(x=>x!==null&&x!==undefined).length] : null;
+      const hintDart = hint ? hint[i - C.currentThrows.length] : null;
       if (hintDart) return `<div class="cthrow-slot" style="border-color:rgba(235,101,255,0.2);background:rgba(235,101,255,0.04)"><div style="color:rgba(235,101,255,0.5);font-size:16px">${hintDart}</div><div class="cthrow-label" style="color:rgba(235,101,255,0.4)">Empf.</div></div>`;
     }
     return `<div class="cthrow-slot"><div>—</div><div class="cthrow-label">Wurf ${i+1}</div></div>`;
@@ -3663,7 +3671,7 @@ function renderCounter() {
       <div style="margin-top:10px">
         <div style="display:flex;gap:8px">
           <button onclick="counterMiss()" style="flex:1;padding:12px 10px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text3);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:50px">Miss</button>
-          <button onclick="counterUndo()" ${C.currentThrows.every(t=>!t)?'disabled':''} style="flex:1;padding:12px 10px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text3);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:50px">↩ Undo</button>
+          <button onclick="counterUndo()" ${C.currentThrows.length===0 && C.correctionIdx<0?'disabled':''} style="flex:1;padding:12px 10px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text3);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:50px">↩ Undo</button>
         </div>
       </div>
     </div>`;
