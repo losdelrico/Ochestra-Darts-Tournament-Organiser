@@ -3207,14 +3207,16 @@ function counterUndo() {
 
 function counterUndoToTurn(turnsBack) {
   C.correctionIdx = -1;
+  let restored = [];
   for (let i = 0; i < turnsBack; i++) {
     if (C.recentTurns.length === 0) break;
     const lt = C.recentTurns.pop();
     C.currentPlayer = lt.player;
     C.players[lt.player].score = lt.scoreBefore;
     if (C.players[lt.player].history.length > 0) C.players[lt.player].history.pop();
+    if (i === 0) restored = [...lt.throws];
   }
-  C.currentThrows = [];
+  C.currentThrows = restored;
   if (C.doubleIn) {
     const p = C.players[C.currentPlayer];
     p.doubleInDone = p.history.some(h => !h.noDoubleIn && !h.wasBust);
