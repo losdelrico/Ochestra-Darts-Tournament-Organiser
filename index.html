@@ -1649,6 +1649,7 @@ function renderSetup() {
   const grpSize = cfg.groupSize || 4;
   const computedGroupCount = players.length > 0 ? Math.max(1, Math.ceil(players.length / grpSize)) : '?';
   const grpCountPreview = players.length > 0 ? `→ ${computedGroupCount} Gruppe${computedGroupCount > 1 ? 'n' : ''} bei ${players.length} Spielern` : `→ ca. ${grpSize} Spieler/Gruppe`;
+  const expectedGrpSize = players.length > 0 ? Math.ceil(players.length / (cfg.groupCount || 1)) : grpSize;
 
   const playerHtml = players.map((p, i) => `
     <div class="player-item" data-pid="${p.id}">
