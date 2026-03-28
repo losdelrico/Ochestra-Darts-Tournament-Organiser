@@ -761,7 +761,7 @@ let C = {
 const DEFAULT_STATE = () => ({
   id: uid(),
   phase: 'setup',
-  cfg: { name: '', boards: 2, legsGroup: 3, legsKO: 5, legsFinal: 5, groupCount: 1, groupSize: 4, include3rd: true, advanceCount: 2, advanceAll: false },
+  cfg: { name: '', boards: 2, legsGroup: 3, legsKO: 5, legsFinal: 5, groupCount: 1, groupSize: 4, include3rd: true, advanceCount: 2, advanceAll: false, koEnabled: true },
   players: [],
   groups: [],
   matches: [],
@@ -1566,10 +1566,10 @@ function renderHeader() {
   const phases = [
     { key: 'setup', label: 'Setup', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>` },
     { key: 'groups', label: 'Vorrunde', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="7" r="2"/><circle cx="15" cy="7" r="2"/><path d="M3 21v-2a4 4 0 0 1 4-4h4"/><path d="M13 21v-2a4 4 0 0 1 4-4h4"/></svg>` },
-    { key: 'knockout', label: 'K.O.', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 6h8M8 12h5M8 18h3"/><path d="M4 4h16v16H4z" rx="2"/></svg>` },
+    ...(T.cfg.koEnabled !== false ? [{ key: 'knockout', label: 'K.O.', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 6h8M8 12h5M8 18h3"/><path d="M4 4h16v16H4z" rx="2"/></svg>` }] : []),
     { key: 'results', label: 'Ergebnis', icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>` }
   ];
-  const order = ['setup', 'groups', 'knockout', 'results'];
+  const order = T.cfg.koEnabled !== false ? ['setup', 'groups', 'knockout', 'results'] : ['setup', 'groups', 'results'];
   const curr = order.indexOf(T.phase);
 
   let tabs = '';
@@ -1719,10 +1719,17 @@ function renderSetup() {
           </div>` : ''}
           <div class="field">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:normal;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;color:var(--text2)">
+              <input type="checkbox" ${cfg.koEnabled !== false ? 'checked' : ''} onchange="T.cfg.koEnabled=this.checked;save();render()" style="width:auto">
+              K.O.-Runde spielen
+            </label>
+            ${cfg.koEnabled === false && cfg.groupCount > 1 ? `<div style="font-size:11px;color:var(--gold);margin-top:4px;font-family:'DM Sans',sans-serif">Hinweis: Bei mehreren Gruppen ist die Gesamtrangliste nur nach Punkten — kein direkter Vergleich.</div>` : ''}
+          </div>
+          ${cfg.koEnabled !== false ? `<div class="field">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:normal;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;color:var(--text2)">
               <input type="checkbox" ${cfg.include3rd ? 'checked' : ''} onchange="T.cfg.include3rd=this.checked;save()" style="width:auto">
               Spiel um Platz 3
             </label>
-          </div>
+          </div>` : ''}
         </div>
       </div>
       <div>
@@ -1894,7 +1901,9 @@ function renderGroups() {
     ${content}
     ${allDone && isAdmin ? `
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">
-        <button class="btn btn-primary" onclick="goToKnockout()">K.O.-Phase starten</button>
+        ${T.cfg.koEnabled !== false
+          ? `<button class="btn btn-primary" onclick="goToKnockout()">K.O.-Phase starten</button>`
+          : `<button class="btn btn-primary" onclick="finishGroupsOnly()">Turnier abschliessen</button>`}
       </div>
     ` : ''}
   `;
@@ -2186,6 +2195,33 @@ function renderBracketMatchCompact(m, canStart) {
 }
 
 function renderResults() {
+  // Group-only mode: build rankings from group standings
+  if (T.cfg.koEnabled === false) {
+    const allStandings = [];
+    T.groups.forEach(g => {
+      getGroupStandings(g.id).forEach((s, i) => allStandings.push({...s, grpRank: i}));
+    });
+    allStandings.sort((a,b) => b.pts - a.pts || (b.legsFor - b.legsAgainst) - (a.legsFor - a.legsAgainst) || b.legsFor - a.legsFor);
+    const rankEmoji = {1:'🥇',2:'🥈',3:'🥉'};
+    const rows = allStandings.map((s,i) => `
+      <div class="result-row">
+        <span class="result-rank">${rankEmoji[i+1]||((i+1)+'.')}</span>
+        ${playerAvatar(s.pid, 32)}
+        <span class="result-name">${esc(playerName(s.pid))}</span>
+        <span style="margin-left:auto;font-family:'Space Grotesk',sans-serif;font-size:13px;color:var(--text3)">${s.pts} Pkt · ${s.legsFor}:${s.legsAgainst}</span>
+      </div>`).join('');
+    const top = allStandings[0];
+    return `
+      <div class="section-title text-center">Turnierergebnisse</div>
+      ${top ? `<div style="text-align:center;padding:16px 0 8px">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;background:linear-gradient(135deg,var(--secondary),var(--primary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">🏆 ${esc(playerName(top.pid))}</div>
+        <div style="font-size:12px;color:var(--text3);font-family:'Space Grotesk',sans-serif;letter-spacing:0.1em;text-transform:uppercase">Turniersieger</div>
+      </div>` : ''}
+      <div class="card"><div class="card-title">Endrangliste</div><div class="results-full">${rows}</div></div>
+      ${isAdmin ? `<div style="display:flex;justify-content:center;margin-top:8px"><button class="btn btn-secondary" onclick="newTournament()">Neues Turnier</button></div>` : ''}
+    `;
+  }
+
   const winner = getFinalWinner();
   const second = getFinalLoser();
   const third = get3rdPlace();
@@ -2487,6 +2523,13 @@ async function startTournament() {
   T.phase = 'groups';
   save();
   if (window._db) listenToTournament(T.id);
+  render();
+}
+
+function finishGroupsOnly() {
+  if (!isAdmin || !allGroupMatchesDone()) return;
+  T.phase = 'results';
+  save();
   render();
 }
 
