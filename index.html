@@ -753,9 +753,11 @@ let appPhase = 'landing';   // 'landing' | 'tournament'
 let showCounter = false;
 let C = {
   setup: true, startScore: 501,
-  players: [{name:'Spieler 1', score:501, history:[]}, {name:'Spieler 2', score:501, history:[]}],
+  players: [{name:'Spieler 1', score:501, history:[], legs:0, doubleInDone:false}, {name:'Spieler 2', score:501, history:[], legs:0, doubleInDone:false}],
   currentPlayer: 0, currentThrows: [],
-  recentTurns: [], gameOver: false, winner: -1, confirmAction: null
+  recentTurns: [], gameOver: false, winner: -1, confirmAction: null,
+  doubleIn: false, doubleOut: true,
+  bestOf: 1, currentLeg: 1, firstPlayerLeg: 0, legJustWon: -1
 };
 
 const DEFAULT_STATE = () => ({
@@ -2989,7 +2991,7 @@ function closeCounter() { showCounter = false; render(); }
 function counterAddPlayer() {
   if (C.players.length >= 4) return;
   const n = C.players.length + 1;
-  C.players.push({name:'Spieler '+n, score:C.startScore, history:[]});
+  C.players.push({name:'Spieler '+n, score:C.startScore, history:[], legs:0, doubleInDone:false});
   document.getElementById('counter-setup-players').innerHTML = counterPlayersHtml();
 }
 
@@ -3023,39 +3025,38 @@ function counterPlayersHtml() {
 }
 
 function counterStartGame() {
-  C.players.forEach(p => { p.score = C.startScore; p.history = []; });
+  C.players.forEach(p => { p.score = C.startScore; p.history = []; p.legs = 0; p.doubleInDone = false; });
   C.currentPlayer = 0;
   C.currentThrows = [];
   C.recentTurns = [];
   C.gameOver = false;
   C.winner = -1;
   C.confirmAction = null;
+  C.currentLeg = 1;
+  C.firstPlayerLeg = 0;
+  C.legJustWon = -1;
   C.setup = false;
   render();
 }
 
 function counterNewGame() {
   C.setup = true;
-  C.players.forEach(p => { p.score = C.startScore; p.history = []; });
+  C.players.forEach(p => { p.score = C.startScore; p.history = []; p.legs = 0; p.doubleInDone = false; });
   C.currentPlayer = 0;
   C.currentThrows = [];
   C.recentTurns = [];
   C.gameOver = false;
   C.winner = -1;
   C.confirmAction = null;
+  C.currentLeg = 1;
+  C.firstPlayerLeg = 0;
+  C.legJustWon = -1;
   render();
 }
 
 function counterHit(num, mult) {
   if (C.gameOver) return;
   if (C.currentThrows.length >= 3) return;
-
-  // (recentTurns stays visible between turns for reference)
-
-  const pts = (num === 0) ? 0 : num * mult;
-  const p = C.players[C.currentPlayer];
-  const thrownSoFar = C.currentThrows.reduce((s,t) => s+t.pts, 0);
-  const remaining = p.score - thrownSoFar - pts;
 
   let label;
   if (num === 0) label = 'Miss';
@@ -3065,15 +3066,41 @@ function counterHit(num, mult) {
   else if (mult === 2) label = 'D'+num;
   else label = String(num);
 
+  const p = C.players[C.currentPlayer];
+  const thrownSoFar = C.currentThrows.reduce((s,t) => s+t.pts, 0);
+
+  // Double In: player hasn't opened yet
+  if (C.doubleIn && !p.doubleInDone) {
+    const isOpeningDouble = mult === 2 && num !== 0;
+    if (!isOpeningDouble) {
+      C.currentThrows.push({num, mult, pts: 0, label, remaining: p.score, bust: false, noDoubleIn: true});
+      if (C.currentThrows.length === 3) {
+        const doneTurn = {player: C.currentPlayer, name: p.name, scoreBefore: p.score, throws: [...C.currentThrows], wasBust: false, noDoubleIn: true};
+        C.recentTurns.push(doneTurn);
+        if (C.recentTurns.length > 2) C.recentTurns.shift();
+        p.history.push({throws:[...C.currentThrows], scoreAfter: p.score, noDoubleIn: true});
+        C.currentThrows = [];
+        C.currentPlayer = (C.currentPlayer + 1) % C.players.length;
+      }
+      render();
+      return;
+    }
+    p.doubleInDone = true;
+  }
+
+  const pts = (num === 0) ? 0 : num * mult;
+  const remaining = p.score - thrownSoFar - pts;
+
   C.currentThrows.push({num, mult, pts, label, remaining, bust: false});
 
-  // Check bust: overshoot, reach 1, or checkout with non-double
-  if (remaining < 0 || remaining === 1 || (remaining === 0 && mult !== 2)) {
+  // Bust check
+  const isBust = remaining < 0 || (C.doubleOut && (remaining === 1 || (remaining === 0 && mult !== 2)));
+  if (isBust) {
     C.currentThrows[C.currentThrows.length-1].bust = true;
     const bustTurn = {player: C.currentPlayer, name: p.name, scoreBefore: p.score, throws: [...C.currentThrows], wasBust: true};
     C.recentTurns.push(bustTurn);
     if (C.recentTurns.length > 2) C.recentTurns.shift();
-    p.history.push({throws: [...C.currentThrows], scoreAfter: p.score, wasBust: true}); // track for stats
+    p.history.push({throws: [...C.currentThrows], scoreAfter: p.score, wasBust: true});
     C.currentThrows = [];
     C.currentPlayer = (C.currentPlayer + 1) % C.players.length;
     render();
@@ -3081,12 +3108,11 @@ function counterHit(num, mult) {
   }
 
   // Win condition
-  if (remaining === 0 && mult === 2) {
+  const isWin = remaining === 0 && (!C.doubleOut || mult === 2);
+  if (isWin) {
     p.score = 0;
     p.history.push({throws:[...C.currentThrows], scoreAfter:0});
-    C.gameOver = true;
-    C.winner = C.currentPlayer;
-    render();
+    completeLeg();
     return;
   }
 
@@ -3107,6 +3133,31 @@ function counterHit(num, mult) {
 }
 
 function counterMiss() { counterHit(0, 1); }
+
+function completeLeg() {
+  const winnerIdx = C.currentPlayer;
+  C.players[winnerIdx].legs++;
+  const needed = Math.ceil(C.bestOf / 2);
+  if (C.players[winnerIdx].legs >= needed) {
+    C.gameOver = true;
+    C.winner = winnerIdx;
+    render();
+  } else {
+    C.legJustWon = winnerIdx;
+    C.currentLeg++;
+    C.firstPlayerLeg = (C.firstPlayerLeg + 1) % C.players.length;
+    render();
+  }
+}
+
+function counterContinueLeg() {
+  C.currentPlayer = C.firstPlayerLeg;
+  C.currentThrows = [];
+  C.recentTurns = [];
+  C.players.forEach(p => { p.score = C.startScore; p.history = []; p.doubleInDone = false; });
+  C.legJustWon = -1;
+  render();
+}
 
 function counterSwapPlayers() {
   if (C.players.length < 2) return;
@@ -3136,7 +3187,10 @@ function counterUndoTurn() {
   C.currentPlayer = lt.player;
   C.players[lt.player].score = lt.scoreBefore;
   if (C.players[lt.player].history.length > 0) C.players[lt.player].history.pop();
-  C.currentThrows = [...lt.throws]; // restore so player can correct individual darts
+  C.currentThrows = [...lt.throws];
+  if (C.doubleIn) {
+    C.players[lt.player].doubleInDone = C.players[lt.player].history.some(h => !h.noDoubleIn && !h.wasBust);
+  }
   render();
 }
 
@@ -3334,12 +3388,15 @@ function buildDartboard() {
 
 function renderCounter() {
   if (C.setup) {
+    const boOpts = [1,3,5,7,9];
+    const togglePill = (val, color) => `<div style="width:44px;height:26px;border-radius:13px;background:${val?color:'var(--glass-2)'};border:1px solid ${val?color:'var(--glass-border)'};position:relative;transition:all 0.2s;flex-shrink:0"><div style="position:absolute;top:3px;${val?'right:3px':'left:3px'};width:18px;height:18px;border-radius:50%;background:white;transition:all 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div></div>`;
+    const rulesBadge = `${C.startScore}${C.doubleIn?' · DI':''}${C.doubleOut?' · DO':' · Straight'}`;
     return `
     <div style="padding:0 0 80px">
       <div style="background:rgba(6,14,32,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--glass-border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;margin:0 -16px 24px">
         <div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--primary);letter-spacing:0.05em;line-height:1">DARTS COUNTER</div>
-          <div style="font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:2px">501 · Double Out</div>
+          <div style="font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:2px">${rulesBadge}</div>
         </div>
         <button onclick="counterBack()" style="padding:10px 14px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:10px;color:var(--text2);cursor:pointer;font-size:13px;font-family:'Space Grotesk',sans-serif;font-weight:600;min-height:44px;transition:all 0.2s">← Zurück</button>
       </div>
@@ -3349,7 +3406,31 @@ function renderCounter() {
       ${C.players.length < 4 ? `<button onclick="counterAddPlayer()" style="width:100%;padding:12px;background:var(--glass-1);border:1px dashed var(--glass-border-strong);border-radius:10px;color:var(--text2);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:44px;transition:all 0.2s;margin-bottom:24px">+ Spieler hinzufügen</button>` : '<div style="margin-bottom:24px"></div>'}
 
       <div class="section-title">Startpunkte</div>
-      <div id="counter-start-btns" style="display:flex;gap:8px;margin-bottom:28px">${counterStartScoreBtns()}</div>
+      <div id="counter-start-btns" style="display:flex;gap:8px;margin-bottom:24px">${counterStartScoreBtns()}</div>
+
+      <div class="section-title">Regeln</div>
+      <div style="background:var(--glass-1);border:1px solid var(--glass-border);border-radius:14px;overflow:hidden;margin-bottom:24px">
+        <div onclick="C.doubleOut=!C.doubleOut;render()" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+          <div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;color:var(--text)">Double Out</div>
+            <div style="font-size:11px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:2px">Ausgang nur auf Doppel</div>
+          </div>
+          ${togglePill(C.doubleOut, 'rgba(235,101,255,0.9)')}
+        </div>
+        <div style="height:1px;background:var(--glass-border);margin:0 16px"></div>
+        <div onclick="C.doubleIn=!C.doubleIn;render()" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+          <div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;color:var(--text)">Double In</div>
+            <div style="font-size:11px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:2px">Eingang nur auf Doppel</div>
+          </div>
+          ${togglePill(C.doubleIn, 'rgba(148,170,255,0.9)')}
+        </div>
+      </div>
+
+      <div class="section-title">Modus</div>
+      <div style="display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap">
+        ${boOpts.map(n => `<button onclick="C.bestOf=${n};render()" style="flex:1;min-width:0;padding:12px 6px;background:${C.bestOf===n?'rgba(235,101,255,0.2)':'var(--glass-1)'};border:1px solid ${C.bestOf===n?'rgba(235,101,255,0.5)':'var(--glass-border)'};border-radius:10px;color:${C.bestOf===n?'var(--secondary)':'var(--text2)'};cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;min-height:48px;transition:all 0.2s;-webkit-tap-highlight-color:transparent;line-height:1.3">${n===1?'1 Leg':'Best<br>of '+n}</button>`).join('')}
+      </div>
 
       <button onclick="counterStartGame()" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--secondary),rgba(162,0,187,0.9));border:none;border-radius:14px;color:white;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 32px rgba(235,101,255,0.3);min-height:54px">Spiel starten →</button>
     </div>`;
@@ -3367,6 +3448,31 @@ function renderCounter() {
         <button onclick="C.confirmAction=null;render()" style="flex:1;padding:14px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:12px;color:var(--text);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;min-height:50px">Weiterspielen</button>
         <button onclick="C.confirmAction=null;${isNew?'counterNewGame()':'closeCounter()'}" style="flex:1;padding:14px;background:rgba(255,110,132,0.15);border:1px solid rgba(255,110,132,0.4);border-radius:12px;color:var(--red);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;min-height:50px">${isNew?'Neu starten':'Verlassen'}</button>
       </div>
+    </div>`;
+  }
+
+  // ---- LEG WON SCREEN ----
+  if (C.legJustWon >= 0) {
+    const legWinner = C.players[C.legJustWon];
+    const legsNeeded = Math.ceil(C.bestOf / 2);
+    const legScore = C.players.map(p => p.legs).join(' : ');
+    return `
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
+      <div style="margin-bottom:12px;font-size:48px">🎯</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Leg ${C.currentLeg - 1} gewonnen</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;background:linear-gradient(135deg,var(--secondary),var(--primary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:4px">${esc(legWinner.name)}</div>
+      <div style="font-size:14px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-bottom:32px">hat den Leg gewonnen!</div>
+      <div style="display:flex;gap:16px;align-items:center;justify-content:center;margin-bottom:36px">
+        ${C.players.map((pl, i) => `
+          <div style="text-align:center">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:${i===C.legJustWon?'var(--secondary)':'var(--text2)'};line-height:1">${pl.legs}</div>
+            <div style="font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px">${esc(pl.name)}</div>
+          </div>
+          ${i < C.players.length - 1 ? `<div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text3)">:</div>` : ''}
+        `).join('')}
+      </div>
+      <div style="font-size:13px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-bottom:24px">Noch ${legsNeeded - Math.max(...C.players.map(p=>p.legs))} Leg${legsNeeded - Math.max(...C.players.map(p=>p.legs)) !== 1 ? 's' : ''} zum Sieg</div>
+      <button onclick="counterContinueLeg()" style="width:100%;max-width:320px;padding:16px;background:linear-gradient(135deg,var(--secondary),rgba(162,0,187,0.9));border:none;border-radius:14px;color:white;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 32px rgba(235,101,255,0.3);min-height:54px">Leg ${C.currentLeg} starten →</button>
     </div>`;
   }
 
@@ -3412,7 +3518,7 @@ function renderCounter() {
       <div style="background:rgba(6,14,32,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--glass-border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;margin:0 -16px 16px">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--primary);letter-spacing:0.05em;line-height:1">STATISTIK</div>
-          <span style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase">${C.startScore} · Double Out</span>
+          <span style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase">${C.startScore}${C.doubleIn?' · DI':''}${C.doubleOut?' · DO':' · Straight'}${C.bestOf>1?' · Best of '+C.bestOf:''}</span>
         </div>
         <button onclick="counterBack()" style="padding:8px 12px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:8px;color:var(--text2);cursor:pointer;font-size:12px;font-family:'Space Grotesk',sans-serif;font-weight:600;min-height:36px">← Zurück</button>
       </div>
@@ -3431,16 +3537,30 @@ function renderCounter() {
   const p = C.players[C.currentPlayer];
   const thrownPts = C.currentThrows.reduce((s,t) => s+t.pts, 0);
   const remaining = p.score - thrownPts;
-  const co = getCheckout(remaining);
+  const co = C.doubleOut ? getCheckout(remaining) : null;
 
   // Player score cards — live score for current player
   const playerCards = C.players.map((pl, i) => {
     const isCurr = i === C.currentPlayer;
     const displayScore = isCurr ? (pl.score - thrownPts) : pl.score;
     const cls = 'counter-player-card' + (isCurr ? ' cpc-active' : '');
-    const sub = isCurr ? (C.currentThrows.length > 0 ? `${C.currentThrows.length}/3 Würfe` : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>wirft') : '';
+    const hasAnspiel = i === C.firstPlayerLeg;
+    const anspielDot = hasAnspiel ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tertiary);margin-left:5px;vertical-align:middle;flex-shrink:0;opacity:0.8"></span>` : '';
+    const doubleInNeeded = C.doubleIn && !pl.doubleInDone;
+    let sub = '';
+    if (isCurr) {
+      if (doubleInNeeded) {
+        sub = `<span style="color:rgba(255,110,132,0.9);font-size:9px;font-weight:700;letter-spacing:0.05em">DOPPEL IN!</span>`;
+      } else {
+        sub = C.currentThrows.length > 0 ? `${C.currentThrows.length}/3 Würfe` : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>wirft';
+      }
+    } else if (C.bestOf > 1) {
+      sub = `<span style="color:var(--text3);font-size:11px">${pl.legs} Leg${pl.legs !== 1 ? 's' : ''}</span>`;
+    } else if (doubleInNeeded) {
+      sub = `<span style="color:rgba(255,110,132,0.5);font-size:9px;font-weight:700;letter-spacing:0.05em">DOPPEL IN</span>`;
+    }
     return `<div class="${cls}">
-      <div class="cpc-name">${esc(pl.name)}</div>
+      <div class="cpc-name" style="display:flex;align-items:center;justify-content:center;gap:0">${esc(pl.name)}${anspielDot}</div>
       <div class="cpc-score${displayScore <= 40 ? ' cpc-low' : ''}">${displayScore}</div>
       <div class="cpc-sub">${sub}</div>
     </div>`;
@@ -3450,6 +3570,9 @@ function renderCounter() {
   const throwSlots = [0,1,2].map(i => {
     const t = C.currentThrows[i];
     if (t) {
+      if (t.noDoubleIn) {
+        return `<button onclick="counterCorrectThrow(${i})" class="cthrow-slot filled" title="Kein Double In — klicken zum Korrigieren" style="cursor:pointer;border:none;width:100%;padding:0;background:rgba(255,110,132,0.06);border-color:rgba(255,110,132,0.25)"><div style="color:rgba(255,110,132,0.7)">${t.label}</div><div class="cthrow-label" style="color:rgba(255,110,132,0.5)">kein DI<span style="font-size:9px;margin-left:3px">✎</span></div></button>`;
+      }
       const cls = 'cthrow-slot filled' + (t.bust ? ' c-bust' : '');
       return `<button onclick="counterCorrectThrow(${i})" class="${cls}" title="Klicken zum Korrigieren" style="cursor:pointer;border:none;width:100%;padding:0"><div>${t.label}</div><div class="cthrow-label">${t.pts > 0 ? '+'+t.pts : '0'}<span style="font-size:9px;color:rgba(255,255,255,0.3);margin-left:3px">✎</span></div></button>`;
     }
@@ -3484,7 +3607,7 @@ function renderCounter() {
       <div style="background:rgba(6,14,32,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--glass-border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;margin:0 -16px 16px">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--primary);letter-spacing:0.05em;line-height:1">COUNTER</div>
-          <span style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase">${C.startScore} · Double Out</span>
+          <span style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase">${C.startScore}${C.doubleIn?' · DI':''}${C.doubleOut?' · DO':' · Straight'}${C.bestOf>1?' · '+C.players.map(p=>p.legs).join(':')+' Leg '+C.currentLeg:''}</span>
         </div>
         <div style="display:flex;gap:6px">
           ${C.players.length === 2 ? `<button onclick="counterSwapPlayers()" title="Spieler tauschen" style="padding:8px 12px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:8px;color:var(--text3);cursor:pointer;font-size:16px;min-height:36px;min-width:36px">⇄</button>` : ''}
