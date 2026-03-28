@@ -3056,7 +3056,7 @@ function counterNewGame() {
 
 function counterHit(num, mult) {
   if (C.gameOver) return;
-  if (C.currentThrows.length >= 3) return;
+  if (C.currentThrows.length >= 3 && !C.currentThrows.includes(null)) return;
 
   let label;
   if (num === 0) label = 'Miss';
@@ -3079,7 +3079,7 @@ function counterHit(num, mult) {
       if (C.currentThrows.length === 3 && !C.currentThrows.includes(null)) {
         const doneTurn = {player: C.currentPlayer, name: p.name, scoreBefore: p.score, throws: [...C.currentThrows], wasBust: false, noDoubleIn: true};
         C.recentTurns.push(doneTurn);
-        if (C.recentTurns.length > 2) C.recentTurns.shift();
+        if (C.recentTurns.length > 3) C.recentTurns.shift();
         p.history.push({throws:[...C.currentThrows], scoreAfter: p.score, noDoubleIn: true});
         C.currentThrows = [];
         C.currentPlayer = (C.currentPlayer + 1) % C.players.length;
@@ -3103,7 +3103,7 @@ function counterHit(num, mult) {
     C.currentThrows[C.currentThrows.length-1].bust = true;
     const bustTurn = {player: C.currentPlayer, name: p.name, scoreBefore: p.score, throws: [...C.currentThrows], wasBust: true};
     C.recentTurns.push(bustTurn);
-    if (C.recentTurns.length > 2) C.recentTurns.shift();
+    if (C.recentTurns.length > 3) C.recentTurns.shift();
     p.history.push({throws: [...C.currentThrows], scoreAfter: p.score, wasBust: true});
     C.currentThrows = [];
     C.currentPlayer = (C.currentPlayer + 1) % C.players.length;
@@ -3124,7 +3124,7 @@ function counterHit(num, mult) {
   if (C.currentThrows.length === 3 && !C.currentThrows.includes(null)) {
     const doneTurn = {player: C.currentPlayer, name: p.name, scoreBefore: p.score, throws: [...C.currentThrows], wasBust: false};
     C.recentTurns.push(doneTurn);
-    if (C.recentTurns.length > 2) C.recentTurns.shift();
+    if (C.recentTurns.length > 3) C.recentTurns.shift();
     p.score = remaining;
     p.history.push({throws:[...C.currentThrows], scoreAfter:remaining});
     C.currentThrows = [];
@@ -3198,15 +3198,18 @@ function counterUndo() {
   render();
 }
 
-function counterUndoTurn() {
-  if (C.recentTurns.length === 0) return;
-  const lt = C.recentTurns.pop();
-  C.currentPlayer = lt.player;
-  C.players[lt.player].score = lt.scoreBefore;
-  if (C.players[lt.player].history.length > 0) C.players[lt.player].history.pop();
-  C.currentThrows = [...lt.throws];
+function counterUndoToTurn(turnsBack) {
+  for (let i = 0; i < turnsBack; i++) {
+    if (C.recentTurns.length === 0) break;
+    const lt = C.recentTurns.pop();
+    C.currentPlayer = lt.player;
+    C.players[lt.player].score = lt.scoreBefore;
+    if (C.players[lt.player].history.length > 0) C.players[lt.player].history.pop();
+  }
+  C.currentThrows = [];
   if (C.doubleIn) {
-    C.players[lt.player].doubleInDone = C.players[lt.player].history.some(h => !h.noDoubleIn && !h.wasBust);
+    const p = C.players[C.currentPlayer];
+    p.doubleInDone = p.history.some(h => !h.noDoubleIn && !h.wasBust);
   }
   render();
 }
@@ -3608,17 +3611,17 @@ function renderCounter() {
 
   const turnTotal = thrownPts;
 
-  // Recent turns feedback (up to 2 turns, newest first)
+  // Recent turns feedback (up to 3 turns, newest first)
   const lastTurnBar = C.recentTurns.length > 0 ? `
     <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
       ${[...C.recentTurns].reverse().map((lt, idx) => {
-        const isNewest = idx === 0;
-        const pts = lt.wasBust ? 0 : lt.throws.reduce((s,t)=>s+t.pts,0);
-        return `<div style="background:${lt.wasBust?'rgba(255,110,132,0.1)':'rgba(129,236,255,0.07)'};border:1px solid ${lt.wasBust?'rgba(255,110,132,0.3)':'rgba(129,236,255,0.2)'};border-radius:10px;padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;${idx>0?'opacity:0.5':''}">
+        const turnsBack = idx + 1;
+        const pts = lt.wasBust ? 0 : lt.throws.reduce((s,t)=>s+(t?t.pts:0),0);
+        return `<div style="background:${lt.wasBust?'rgba(255,110,132,0.1)':'rgba(129,236,255,0.07)'};border:1px solid ${lt.wasBust?'rgba(255,110,132,0.3)':'rgba(129,236,255,0.2)'};border-radius:10px;padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;opacity:${1-idx*0.25}">
           <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:${lt.wasBust?'var(--red)':'var(--tertiary)'};min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-            ${lt.wasBust?'BUST':'✓'} <strong>${esc(lt.name)}</strong>: ${lt.throws.map(t=>t.label).join(' · ')}${!lt.wasBust?' <span style="color:var(--text3)">(+'+pts+')</span>':''}
+            ${lt.wasBust?'BUST':'✓'} <strong>${esc(lt.name)}</strong>: ${lt.throws.filter(t=>t).map(t=>t.label).join(' · ')}${!lt.wasBust?' <span style="color:var(--text3)">(+'+pts+')</span>':''}
           </span>
-          ${isNewest ? `<button onclick="counterUndoTurn()" style="flex-shrink:0;padding:4px 9px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:7px;color:var(--text2);cursor:pointer;font-size:11px;font-family:'Space Grotesk',sans-serif;font-weight:600;min-height:30px;white-space:nowrap">↩ Korr.</button>` : `<span style="flex-shrink:0;font-size:10px;color:var(--text3);font-family:'DM Sans',sans-serif">-2</span>`}
+          <button onclick="counterUndoToTurn(${turnsBack})" style="flex-shrink:0;padding:4px 9px;background:var(--glass-2);border:1px solid var(--glass-border);border-radius:7px;color:var(--text2);cursor:pointer;font-size:11px;font-family:'Space Grotesk',sans-serif;font-weight:600;min-height:30px;white-space:nowrap">↩ Korr.</button>
         </div>`;
       }).join('')}
     </div>` : '';
