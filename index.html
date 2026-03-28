@@ -1521,25 +1521,67 @@ function renderLanding() {
     </div>
   `).join('');
 
+  const sectionLabel = txt => `<div style="font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:8px;padding-left:2px">${txt}</div>`;
+
   return `
-    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:48px 16px 32px">
-      <div style="text-align:center;margin-bottom:40px">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:64px;letter-spacing:0.12em;line-height:1;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">OCHESTRA</div>
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.18em;text-transform:uppercase;margin-top:6px">Darts Tournament Organiser</div>
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 16px 48px">
+
+      <!-- Logo -->
+      <div style="text-align:center;margin-bottom:36px">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:0.12em;line-height:1;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">OCHESTRA</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.18em;text-transform:uppercase;margin-top:4px">Darts Tournament Organiser</div>
       </div>
 
-      <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px">
+      <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:20px">
 
-        ${list.length > 0 ? `
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:2px">Turniere</div>
-          ${tournamentCards}
-        ` : `<div style="text-align:center;padding:32px;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:14px">Noch keine Turniere vorhanden.</div>`}
+        <!-- ① SPIELER / GAST -->
+        <div>
+          ${sectionLabel('Spieler / Gast')}
+          <div style="background:linear-gradient(135deg,rgba(148,170,255,0.08),rgba(129,236,255,0.05));border:1px solid rgba(148,170,255,0.18);border-radius:var(--radius);padding:20px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">Turnier beitreten</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text3);margin-bottom:16px;line-height:1.5">Scanne den QR-Code des Admins um einem laufenden Turnier als Gast beizutreten und Ergebnisse zu melden.</div>
+            <button onclick="openQrScanner()" style="width:100%;padding:14px;background:rgba(129,236,255,0.12);border:1px solid rgba(129,236,255,0.3);border-radius:12px;color:var(--tertiary);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0.04em;min-height:50px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              QR-Code scannen
+            </button>
+          </div>
+        </div>
 
-        <button onclick="showLandingPin('__new__')" style="width:100%;margin-top:6px;padding:14px;background:transparent;border:1px dashed rgba(148,170,255,0.25);border-radius:var(--radius);color:var(--text3);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.06em;transition:all 0.15s" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='rgba(148,170,255,0.25)';this.style.color='var(--text3)'">＋ Neues Turnier erstellen</button>
-        <button onclick="openCounter()" style="width:100%;margin-top:6px;padding:14px;background:none;border:1px solid rgba(148,170,255,0.2);border-radius:var(--radius);color:var(--primary);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.15s"><svg width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="15" fill="rgba(148,170,255,0.1)" stroke="rgba(148,170,255,0.55)" stroke-width="1.5"/><circle cx="16" cy="16" r="10" fill="rgba(255,110,132,0.1)" stroke="rgba(255,110,132,0.55)" stroke-width="1.5"/><circle cx="16" cy="16" r="5" fill="rgba(235,101,255,0.85)" stroke="rgba(235,101,255,0.5)" stroke-width="1"/></svg> Darts Counter</button>
+        <!-- ② ADMIN ORGANISATION -->
+        <div>
+          ${sectionLabel('Admin — Organisation')}
+          <div style="background:linear-gradient(135deg,rgba(235,101,255,0.07),rgba(148,170,255,0.04));border:1px solid rgba(235,101,255,0.18);border-radius:var(--radius);padding:20px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">Turnier verwalten</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text3);margin-bottom:16px;line-height:1.5">Erstelle und leite ein Turnier. Teile den QR-Code mit den Spielern.</div>
+
+            ${list.length > 0 ? `
+              <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+                ${tournamentCards}
+              </div>
+            ` : ''}
+
+            <button onclick="showLandingPin('__new__')" style="width:100%;padding:13px;background:rgba(235,101,255,0.12);border:1px solid rgba(235,101,255,0.3);border-radius:12px;color:var(--secondary);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.04em;min-height:48px">
+              ＋ Neues Turnier erstellen
+            </button>
+          </div>
+        </div>
+
+        <!-- ③ DARTS COUNTER -->
+        <div>
+          ${sectionLabel('Darts Counter')}
+          <div style="background:linear-gradient(135deg,rgba(255,110,132,0.07),rgba(235,101,255,0.04));border:1px solid rgba(255,110,132,0.18);border-radius:var(--radius);padding:20px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">Standalone Counter</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text3);margin-bottom:16px;line-height:1.5">501 / 301 Zähler mit Dartboard, Checkout-Hilfe und Statistiken. Kein Turnier nötig.</div>
+            <button onclick="openCounter()" style="width:100%;padding:13px;background:rgba(255,110,132,0.1);border:1px solid rgba(255,110,132,0.28);border-radius:12px;color:var(--red);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0.04em;min-height:48px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              Counter öffnen
+            </button>
+          </div>
+        </div>
+
       </div>
 
-      <!-- PIN Panel -->
+      <!-- PIN Panel (unverändert) -->
       <div id="landing-pin-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);z-index:100;align-items:center;justify-content:center;padding:16px">
         <div style="background:#0d1526;border:1px solid rgba(148,170,255,0.15);border-radius:20px;padding:36px 28px 28px;width:100%;max-width:340px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.6)">
           <div style="margin-bottom:16px;color:var(--primary)" id="landing-pin-icon"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
