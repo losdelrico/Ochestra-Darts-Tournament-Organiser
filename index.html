@@ -1350,21 +1350,6 @@ function render() {
 
   const blobs = document.querySelectorAll('.ambient-blob');
   if (appPhase === 'landing') {
-    if (!isAdmin) {
-      blobs.forEach(b => b.style.opacity = '0');
-      app.innerHTML = `
-        <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:0.12em;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:8px">OCHESTRA</div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:40px">Darts Tournament Organiser</div>
-          <div style="margin-bottom:20px;color:var(--primary)"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">Kein aktives Turnier</div>
-          <div style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text3);max-width:280px;line-height:1.6;margin-bottom:32px">Scanne den QR-Code des aktiven Turniers.</div>
-          <button onclick="openQrScanner()" style="padding:16px 32px;background:linear-gradient(135deg,var(--primary),var(--secondary));border:none;border-radius:14px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:0.08em;cursor:pointer;box-shadow:0 4px 24px rgba(148,170,255,0.3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>QR-Code scannen</button>
-          <button onclick="openAdminLogin()" style="margin-top:24px;background:none;border:none;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px">Als Admin einloggen</button>
-          <button onclick="openCounter()" style="margin-top:12px;background:none;border:1px solid rgba(148,170,255,0.2);color:var(--primary);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;padding:12px 24px;border-radius:12px;display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="15" fill="rgba(148,170,255,0.1)" stroke="rgba(148,170,255,0.55)" stroke-width="1.5"/><circle cx="16" cy="16" r="10" fill="rgba(255,110,132,0.1)" stroke="rgba(255,110,132,0.55)" stroke-width="1.5"/><circle cx="16" cy="16" r="5" fill="rgba(235,101,255,0.85)" stroke="rgba(235,101,255,0.5)" stroke-width="1"/></svg> Darts Counter</button>
-        </div>`;
-      return;
-    }
     blobs.forEach(b => b.style.opacity = '0');
     app.innerHTML = renderLanding();
     return;
